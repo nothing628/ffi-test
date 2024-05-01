@@ -1,0 +1,5 @@
+{
+    "require": {
+        "ffi/scalar-utils": "^1.0"
+    }
+}

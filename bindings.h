@@ -4,7 +4,9 @@
 
  uint32_t add(uint32_t A) ;
 
- uint32_t add_array(const int32_t *BytsPtr, size_t BytsLen) ;
+ uint32_t add_array(const uint32_t *BytsPtr, size_t BytsLen) ;
+
+ uint32_t *get_section(const uint32_t *BytsPtr, size_t BytsLen) ;
 
  uint32_t *ret_arr(void) ;
 
