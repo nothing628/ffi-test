@@ -16,6 +16,10 @@ typedef struct CAPI_WatermarkTask CAPI_WatermarkTask;
 
  void destroy_watermarktask(struct CAPI_WatermarkTask *Ptr) ;
 
+ uint32_t get_output_jpeg(struct CAPI_WatermarkTask *Ptr, struct CAPI_ArrResult *Target) ;
+
+ uint32_t get_output_webp(struct CAPI_WatermarkTask *Ptr, struct CAPI_ArrResult *Target) ;
+
  struct CAPI_ArrResult *get_section_jpeg(const uint8_t *BytsPtr, size_t BytsLen, uint32_t X, uint32_t Y, uint32_t W, uint32_t H) ;
 
  struct CAPI_ArrResult *get_section_webp(const uint8_t *BytsPtr, size_t BytsLen, uint32_t X, uint32_t Y, uint32_t W, uint32_t H) ;

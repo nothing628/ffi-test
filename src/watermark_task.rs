@@ -3,7 +3,8 @@ use image::{
     load_from_memory_with_format, DynamicImage, GenericImage, GenericImageView, ImageFormat,
     ImageResult,
 };
-use std::mem::transmute;
+use std::{io::Cursor, mem::transmute};
+use crate::arr_result::ArrResult;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum OriginX {
@@ -225,7 +226,6 @@ pub extern "C" fn set_watermark_jpeg(
     0
 }
 
-
 #[no_mangle]
 pub extern "C" fn destroy_watermarktask(ptr: *mut WatermarkTask) {
     let _counter: Box<WatermarkTask> = unsafe { transmute(ptr) };
@@ -243,3 +243,48 @@ pub extern "C" fn process_watermark(ptr: *mut WatermarkTask) -> u32 {
     0
 }
 
+#[no_mangle]
+pub extern "C" fn get_output_webp(ptr: *mut WatermarkTask, target: *mut ArrResult) -> u32 {
+    let watermark_task = unsafe { &mut *ptr };
+    let target_arr = unsafe { &mut *target};
+    let output = &watermark_task.output;
+
+    if let Some(output_img) = output {
+        let mut bytes: Vec<u8> = Vec::new();
+        let mut cur = Cursor::new(&mut bytes);
+        let output_bin = output_img.write_to(&mut cur, ImageFormat::WebP);
+
+        if let Err(_) = output_bin {
+            return 2
+        }
+
+        target_arr.arr = bytes;
+
+        return 0
+    }
+
+    1
+}
+
+#[no_mangle]
+pub extern "C" fn get_output_jpeg(ptr: *mut WatermarkTask, target: *mut ArrResult) -> u32 {
+    let watermark_task = unsafe { &mut *ptr };
+    let target_arr = unsafe { &mut *target};
+    let output = &watermark_task.output;
+
+    if let Some(output_img) = output {
+        let mut bytes: Vec<u8> = Vec::new();
+        let mut cur = Cursor::new(&mut bytes);
+        let output_bin = output_img.write_to(&mut cur, ImageFormat::Jpeg);
+
+        if let Err(_) = output_bin {
+            return 2
+        }
+
+        target_arr.arr = bytes;
+
+        return 0
+    }
+
+    1
+}
