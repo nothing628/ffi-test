@@ -1,4 +1,4 @@
-use image::{load_from_memory_with_format, DynamicImage, GenericImage, ImageFormat, ImageResult};
+use image::{load_from_memory_with_format, ImageFormat};
 use std::io::Cursor;
 
 pub fn get_section_webp(img: &[u8], x: u32, y: u32, w: u32, h: u32) -> Vec<u8> {
@@ -21,15 +21,4 @@ pub fn get_section_jpeg(img: &[u8], x: u32, y: u32, w: u32, h: u32) -> Vec<u8> {
         .unwrap();
 
     bytes
-}
-
-pub fn put_watermark(
-    target: &mut DynamicImage,
-    watermark: &DynamicImage,
-    x: u32,
-    y: u32,
-) -> ImageResult<()> {
-    target.copy_from(watermark, x, y)?;
-
-    Ok(())
 }

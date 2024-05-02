@@ -22,6 +22,8 @@ typedef struct CAPI_WatermarkTask CAPI_WatermarkTask;
 
  size_t len_arr_result(struct CAPI_ArrResult *Ptr) ;
 
+ uint32_t process_watermark(struct CAPI_WatermarkTask *Ptr) ;
+
  const uint8_t *read_arr_result(struct CAPI_ArrResult *Ptr, size_t Len) ;
 
  uint32_t *ret_arr(void) ;
