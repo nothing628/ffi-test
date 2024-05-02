@@ -1,5 +1,8 @@
 {
     "require": {
         "ffi/scalar-utils": "^1.0"
+    },
+    "require-dev": {
+        "symfony/var-dumper": "^7.0"
     }
 }

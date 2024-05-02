@@ -5,6 +5,16 @@ pub struct ArrResult {
 }
 
 #[no_mangle]
+pub extern fn create_arr_result() -> *mut ArrResult {
+    let arr_result = ArrResult {
+        arr: Vec::new(),
+    };
+    let ptr = unsafe { transmute(Box::new(arr_result)) };
+
+    ptr
+}
+
+#[no_mangle]
 pub extern fn len_arr_result(ptr: *mut ArrResult) -> usize {
     let arr_result = unsafe { & *ptr };
     arr_result.arr.len()

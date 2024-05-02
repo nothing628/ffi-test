@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use image::{
     load_from_memory_with_format, DynamicImage, GenericImage, GenericImageView, ImageFormat,
-    ImageResult,
+    ImageResult, Pixel,
 };
 use std::{io::Cursor, mem::transmute};
 use crate::arr_result::ArrResult;
@@ -98,9 +98,19 @@ impl WatermarkTask {
 
         if let Some(target_img) = target {
             if let Some(watermark_img) = watermark {
+                let (watermark_w, watermark_h) = watermark_img.dimensions();
                 let pos = solve_absolute_position(&target_img, &watermark_img, origin_x, origin_y, &offset);
                 let mut clone_target = target_img.clone();
-                clone_target.copy_from(watermark_img, pos.x, pos.y)?;
+                let mut sub_img = clone_target.sub_image(pos.x, pos.y, watermark_w, watermark_h);
+
+                for x in 0..watermark_w {
+                    for y in 0..watermark_h {
+                        let pix_src = watermark_img.get_pixel(x, y);
+                        let mut pix_tar = sub_img.get_pixel(x, y);
+                        pix_tar.blend(&pix_src);
+                        sub_img.put_pixel(x, y, pix_tar);
+                    }
+                }
 
                 self.output = Some(clone_target);
 

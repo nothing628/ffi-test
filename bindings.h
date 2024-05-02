@@ -10,6 +10,8 @@ typedef struct CAPI_WatermarkTask CAPI_WatermarkTask;
 
  uint32_t add_array(const uint32_t *BytsPtr, size_t BytsLen) ;
 
+ struct CAPI_ArrResult *create_arr_result(void) ;
+
  struct CAPI_WatermarkTask *create_watermarktask(void) ;
 
  void destroy_arr_result(struct CAPI_ArrResult *Ptr) ;
