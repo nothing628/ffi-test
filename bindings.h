@@ -18,6 +18,8 @@ typedef struct CAPI_WatermarkTask CAPI_WatermarkTask;
 
  void destroy_watermarktask(struct CAPI_WatermarkTask *Ptr) ;
 
+ uint32_t get_old_section_webp(struct CAPI_WatermarkTask *Ptr, struct CAPI_ArrResult *Target) ;
+
  uint32_t get_output_jpeg(struct CAPI_WatermarkTask *Ptr, struct CAPI_ArrResult *Target) ;
 
  uint32_t get_output_webp(struct CAPI_WatermarkTask *Ptr, struct CAPI_ArrResult *Target) ;

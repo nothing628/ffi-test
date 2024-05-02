@@ -23,6 +23,7 @@ pub struct WatermarkTask {
     watermark: Option<DynamicImage>,
     target: Option<DynamicImage>,
     output: Option<DynamicImage>,
+    old_section: Option<DynamicImage>,
     origin_x: OriginX,
     origin_y: OriginY,
     x: u32,
@@ -69,6 +70,7 @@ impl WatermarkTask {
             target: None,
             watermark: None,
             output: None,
+            old_section: None,
         }
     }
 
@@ -102,6 +104,7 @@ impl WatermarkTask {
                 let pos = solve_absolute_position(&target_img, &watermark_img, origin_x, origin_y, &offset);
                 let mut clone_target = target_img.clone();
                 let mut sub_img = clone_target.sub_image(pos.x, pos.y, watermark_w, watermark_h);
+                let copy_sub_img: DynamicImage = sub_img.to_image().into();
 
                 for x in 0..watermark_w {
                     for y in 0..watermark_h {
@@ -113,6 +116,7 @@ impl WatermarkTask {
                 }
 
                 self.output = Some(clone_target);
+                self.old_section = Some(copy_sub_img);
 
                 Ok(())
             } else {
@@ -251,6 +255,29 @@ pub extern "C" fn process_watermark(ptr: *mut WatermarkTask) -> u32 {
         return 1;
     }
     0
+}
+
+#[no_mangle]
+pub extern fn get_old_section_webp(ptr: *mut WatermarkTask, target: *mut ArrResult) -> u32 {
+    let watermark_task = unsafe { &mut *ptr };
+    let target_arr = unsafe { &mut *target};
+    let output = &watermark_task.old_section;
+
+    if let Some(output_img) = output {
+        let mut bytes: Vec<u8> = Vec::new();
+        let mut cur = Cursor::new(&mut bytes);
+        let output_bin = output_img.write_to(&mut cur, ImageFormat::WebP);
+
+        if let Err(_) = output_bin {
+            return 2
+        }
+
+        target_arr.arr = bytes;
+
+        return 0
+    }
+
+    1
 }
 
 #[no_mangle]
