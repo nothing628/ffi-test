@@ -70,5 +70,9 @@ function cropJpeg(\FFI $ffi) {
     FFI::free($inp_arr);
 }
 
+function testWatermark(\FFI $ffi) {
+    //
+}
+
 cropWebp($ffi);
 cropJpeg($ffi);
