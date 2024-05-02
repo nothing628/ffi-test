@@ -24,26 +24,51 @@ FFI::free($inp_arr);
 // }
 // var_dump($result);
 
-$fileContent = file_get_contents("./test.webp");
-$fileBytes = unpack("C*", $fileContent);
-$fileLength = count($fileBytes);
-
-var_dump($fileLength);
-
-$inp_arr = Type::uint8Array($fileBytes, false);
-$result_ptr = $ffi->get_section_webp($inp_arr, $fileLength, 625, 175, 200, 200);
-$out_len = $ffi->len_arr_result($result_ptr);
-$out_arr = $ffi->read_arr_result($result_ptr, $out_len);
-
-$tmp = [];
-
-for ($i = 0; $i < $out_len; $i++) {
-    $tmp[] = $out_arr[$i];
+function cropWebp(\FFI $ffi) {
+    $fileContent = file_get_contents("./test.webp");
+    $fileBytes = unpack("C*", $fileContent);
+    $fileLength = count($fileBytes);
+    
+    $inp_arr = Type::uint8Array($fileBytes, false);
+    $result_ptr = $ffi->get_section_webp($inp_arr, $fileLength, 625, 175, 200, 200);
+    $out_len = $ffi->len_arr_result($result_ptr);
+    $out_arr = $ffi->read_arr_result($result_ptr, $out_len);
+    
+    $tmp = [];
+    
+    for ($i = 0; $i < $out_len; $i++) {
+        $tmp[] = $out_arr[$i];
+    }
+    
+    $fileOut = implode(array_map("chr", $tmp));
+    $ffi->destroy_arr_result($result_ptr);
+    
+    file_put_contents("crop.webp", $fileOut);
+    FFI::free($inp_arr);
 }
 
-$fileOut = implode(array_map("chr", $tmp));
+function cropJpeg(\FFI $ffi) {
+    $fileContent = file_get_contents("./test.jpeg");
+    $fileBytes = unpack("C*", $fileContent);
+    $fileLength = count($fileBytes);
+    
+    $inp_arr = Type::uint8Array($fileBytes, false);
+    $result_ptr = $ffi->get_section_jpeg($inp_arr, $fileLength, 625, 175, 200, 200);
+    $out_len = $ffi->len_arr_result($result_ptr);
+    $out_arr = $ffi->read_arr_result($result_ptr, $out_len);
+    
+    $tmp = [];
+    
+    for ($i = 0; $i < $out_len; $i++) {
+        $tmp[] = $out_arr[$i];
+    }
+    
+    $fileOut = implode(array_map("chr", $tmp));
+    $ffi->destroy_arr_result($result_ptr);
+    
+    file_put_contents("crop.jpeg", $fileOut);
+    FFI::free($inp_arr);
+}
 
-file_put_contents("crop.webp", $fileOut);
-
-$ffi->destroy_arr_result($result_ptr);
-FFI::free($inp_arr);
+cropWebp($ffi);
+cropJpeg($ffi);

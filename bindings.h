@@ -10,6 +10,8 @@ typedef struct CAPI_ArrResult CAPI_ArrResult;
 
  void destroy_arr_result(struct CAPI_ArrResult *Ptr) ;
 
+ struct CAPI_ArrResult *get_section_jpeg(const uint8_t *BytsPtr, size_t BytsLen, uint32_t X, uint32_t Y, uint32_t W, uint32_t H) ;
+
  struct CAPI_ArrResult *get_section_webp(const uint8_t *BytsPtr, size_t BytsLen, uint32_t X, uint32_t Y, uint32_t W, uint32_t H) ;
 
  size_t len_arr_result(struct CAPI_ArrResult *Ptr) ;
