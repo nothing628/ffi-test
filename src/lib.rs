@@ -1,3 +1,4 @@
+mod watermark_task;
 mod img;
 
 use std::mem::{forget, transmute};
