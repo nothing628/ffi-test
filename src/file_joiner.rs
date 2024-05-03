@@ -6,7 +6,7 @@ pub enum JoinError {
     InvalidWebpFile,
 }
 
-fn le_to_u32(inp: &[u8]) -> u32 {
+pub fn le_to_u32(inp: &[u8]) -> u32 {
     let len = inp.len();
     let output = match len {
         0 => 0,
@@ -40,7 +40,7 @@ fn le_to_u32(inp: &[u8]) -> u32 {
     output
 }
 
-fn usize_to_le(inp: usize) -> [u8; 4] {
+pub fn usize_to_le(inp: usize) -> [u8; 4] {
     let mut bytes = [0u8; 4];
 
     bytes[0] = (inp & 0xFF) as u8;
