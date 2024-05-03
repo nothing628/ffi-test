@@ -2,6 +2,7 @@ mod arr_result;
 mod watermark_task;
 mod img;
 mod file_joiner;
+mod webp_container;
 
 use std::mem::{forget, transmute};
 
