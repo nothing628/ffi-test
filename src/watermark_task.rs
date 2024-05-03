@@ -5,6 +5,7 @@ use image::{
 };
 use std::{io::Cursor, mem::transmute};
 use crate::arr_result::ArrResult;
+use crate::file_joiner::join_webp;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum OriginX {
@@ -308,22 +309,40 @@ pub extern "C" fn get_output_webp(ptr: *mut WatermarkTask, target: *mut ArrResul
     let watermark_task = unsafe { &mut *ptr };
     let target_arr = unsafe { &mut *target};
     let output = &watermark_task.output;
+    let old_section = &watermark_task.old_section;
+    let mut bytes: Vec<u8> = Vec::new();
+    let mut old_bytes: Vec<u8> = Vec::new();
 
     if let Some(output_img) = output {
-        let mut bytes: Vec<u8> = Vec::new();
         let mut cur = Cursor::new(&mut bytes);
         let output_bin = output_img.write_to(&mut cur, ImageFormat::WebP);
-
+        
         if let Err(_) = output_bin {
             return 2
         }
-
-        target_arr.arr = bytes;
-
+    } else {
+        return 1
+    }
+    
+    if let Some(old_img) = old_section {
+        let mut cur_old = Cursor::new(&mut old_bytes);
+        let output_old = old_img.write_to(&mut cur_old, ImageFormat::WebP);
+        
+        if let Err(_) = output_old {
+            return 3
+        }
+    } else {
+        return 1
+    }
+    
+    let join_result = join_webp(&bytes, &old_bytes);
+    if let Ok(result) = join_result {
+        target_arr.arr = result;
+        
         return 0
     }
 
-    1
+    4
 }
 
 #[no_mangle]

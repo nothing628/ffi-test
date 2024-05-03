@@ -89,7 +89,6 @@ function testWatermark(\FFI $ffi)
 
     $watermarkTask = $ffi->create_watermarktask();
     $arrResult = $ffi->create_arr_result();
-    $arrOld = $ffi->create_arr_result();
 
     $ffi->set_position_watermark($watermarkTask, 40, 40, 1, 1);
     $ffi->set_target_webp($watermarkTask, $targetArr, $targetLen);
@@ -110,25 +109,10 @@ function testWatermark(\FFI $ffi)
             
             storeToFile($tmp, "crop.webp");
         }
-
-        $copyResult = $ffi->get_old_section_webp($watermarkTask, $arrOld);
-
-        if ($copyResult == 0) {
-            $resultLen = $ffi->len_arr_result($arrOld);
-            $resultArr = $ffi->read_arr_result($arrOld, $resultLen);
-            $tmp = [];
-
-            for ($i = 0; $i < $resultLen; $i++) {
-                $tmp[] = $resultArr[$i];
-            }
-            
-            storeToFile($tmp, "old.webp");
-        }
     }
 
     $ffi->destroy_watermarktask($watermarkTask);
     $ffi->destroy_arr_result($arrResult);
-    $ffi->destroy_arr_result($arrOld);
 }
 
 // cropWebp($ffi);

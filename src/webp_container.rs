@@ -223,7 +223,7 @@ impl TryFrom<&Vec<u8>> for RegularChunk {
         }
 
         let chunk_id = str::from_utf8(first_header).unwrap();
-        let chunk_data = value.get(8..).ok_or_else(|| ChunkError::InvalidChunk)?;;
+        let chunk_data = value.get(8..).ok_or_else(|| ChunkError::InvalidChunk)?;
         let result = RegularChunk {
             chunk_id: String::from(chunk_id),
             chunk_data: Vec::from(chunk_data),
