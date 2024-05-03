@@ -30,6 +30,7 @@ pub struct RIFFContainer {
     subchunks: Vec<Box<dyn Chunk>>,
 }
 
+#[derive(Debug)]
 pub struct RegularChunk {
     pub chunk_id: String,
     pub chunk_data: Vec<u8>,
@@ -230,5 +231,82 @@ impl TryFrom<&Vec<u8>> for RegularChunk {
         };
 
         Ok(result)
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_can_create_riff_container() {
+        let container = RIFFContainer {
+            frame_id: String::from("WEBP"),
+            subchunks: Vec::new(),
+        };
+
+        assert_eq!(container.frame_id, "WEBP");
+        assert_eq!(container.subchunks.len(), 0);
+    }
+
+    #[test]
+    fn it_can_verify_riff_bytes() {
+        let container = RIFFContainer {
+            frame_id: String::from("WEBP"),
+            subchunks: Vec::new(),
+        };
+        let container_bytes = container.to_bytes();
+
+        assert_eq!(container_bytes[..], [0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]);
+    }
+
+    #[test]
+    fn it_can_create_chunk() {
+        let chunk = RegularChunk {
+            chunk_id: String::from("VP8L"),
+            chunk_data: Vec::from([0x52, 0x49, 0x46, 0x46]),
+        };
+        
+        assert_eq!(chunk.chunk_id, "VP8L");
+        assert_eq!(chunk.chunk_data.len(), 4);
+    }
+
+    #[test]
+    fn regular_chunk_return_none_for_chunk_data()
+    {
+        let chunk = RegularChunk {
+            chunk_id: String::from("VP8L"),
+            chunk_data: Vec::from([0x52, 0x49, 0x46, 0x46]),
+        };
+        let chunk_data = chunk.get_chunk_data();
+        
+        if let Some(_) = chunk_data {
+            panic!("Chunk data for RegularChunk should always be None variant");
+        }
+    }
+
+    #[test]
+    fn regular_chunk_return_get_chunk_bytes() {
+        let test_data = [0x52u8, 0x49, 0x46, 0x46];
+        let chunk = RegularChunk {
+            chunk_id: String::from("VP8L"),
+            chunk_data: Vec::from(test_data),
+        };
+        let chunk_data = chunk.get_chunk_bytes();
+        
+        assert_eq!(chunk_data, test_data);
+    }
+
+    #[test]
+    fn regular_chunk_return_get_chunk_id() {
+        let test_data = [0x52u8, 0x49, 0x46, 0x46];
+        let chunk = RegularChunk {
+            chunk_id: String::from("VP8L"),
+            chunk_data: Vec::from(test_data),
+        };
+        let chunk_id = chunk.get_chunk_id();
+
+        assert_eq!(chunk_id, "VP8L");
     }
 }
