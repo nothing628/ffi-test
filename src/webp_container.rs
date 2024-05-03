@@ -31,8 +31,8 @@ pub struct RIFFContainer {
 }
 
 pub struct RegularChunk {
-    chunk_id: String,
-    chunk_data: Vec<u8>,
+    pub chunk_id: String,
+    pub chunk_data: Vec<u8>,
 }
 
 pub trait Chunk {
@@ -83,6 +83,10 @@ impl RIFFContainer {
         }
 
         result
+    }
+
+    pub fn push_subchunk(&mut self, chunk: Box<dyn Chunk>) {
+        self.subchunks.push(chunk);
     }
 }
 

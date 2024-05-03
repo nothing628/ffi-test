@@ -1,3 +1,4 @@
+use crate::webp_container::{Chunk, RIFFContainer, RegularChunk};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -51,23 +52,18 @@ pub fn usize_to_le(inp: usize) -> [u8; 4] {
     bytes
 }
 
-fn create_subchunk(chunk_id: &str, data: &[u8]) -> Vec<u8> {
-    let chunk_size = data.len();
-    let chunk_size_bytes = usize_to_le(chunk_size);
-    let chunk_id_bytes = chunk_id.as_bytes();
-    let mut result = Vec::from(chunk_id_bytes);
-
-    chunk_size_bytes.iter().for_each(|f| result.push(*f));
-    data.iter().for_each(|f| result.push(*f));
-
-    result
-}
-
 pub fn join_webp(inp: &[u8], target: &[u8]) -> Result<Vec<u8>, JoinError> {
-    let result = Vec::new();
-    let size_slice = inp.get(4..8).ok_or_else(|| JoinError::InvalidWebpFile)?;
-    let chunk = create_subchunk("milf", &target[..]);
-    let size = le_to_u32(&size_slice);
+    let inp_vec = Vec::from(inp);
+    let target_vec = Vec::from(target);
+    let mut inp_container =
+        RIFFContainer::try_from(&inp_vec).map_err(|_| JoinError::InvalidWebpFile)?;
 
-    Ok(result)
+    let regular = RegularChunk {
+        chunk_data: target_vec,
+        chunk_id: String::from("milf"),
+    };
+
+    inp_container.push_subchunk(Box::new(regular));
+
+    Ok(inp_container.to_bytes())
 }
