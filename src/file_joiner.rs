@@ -67,3 +67,44 @@ pub fn join_webp(inp: &[u8], target: &[u8]) -> Result<Vec<u8>, JoinError> {
 
     Ok(inp_container.to_bytes())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn le_to_u32_success() {
+        let inp = [0x28u8, 0x7A, 0x44, 0x9A];
+        let output = le_to_u32(&inp);
+
+        assert_eq!(output, 0x9A447A28);
+
+        let inp = [0x28u8, 0x7A, 0x44, 0x00];
+        let output = le_to_u32(&inp);
+
+        assert_eq!(output, 0x00447A28);
+
+        let inp = [0x00u8, 0x7A, 0x44, 0x9A];
+        let output = le_to_u32(&inp);
+
+        assert_eq!(output, 0x9A447A00);
+    }
+
+    #[test]
+    fn usize_to_le_success() {
+        let inp = 0x9A447A28;
+        let output = usize_to_le(inp);
+
+        assert_eq!(output, [0x28u8, 0x7A, 0x44, 0x9A]);
+
+        let inp = 0x00447A28;
+        let output = usize_to_le(inp);
+
+        assert_eq!(output, [0x28u8, 0x7A, 0x44, 0x00]);
+
+            let inp = 0x9A447A00;
+        let output = usize_to_le(inp);
+
+        assert_eq!(output, [0x00u8, 0x7A, 0x44, 0x9A]);
+    }
+}
