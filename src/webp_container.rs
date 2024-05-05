@@ -30,7 +30,7 @@ pub struct RIFFContainer {
     subchunks: Vec<Box<dyn Chunk>>,
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug)]
 pub struct RegularChunk {
     pub chunk_id: String,
     pub chunk_data: Vec<u8>,
@@ -58,13 +58,13 @@ impl RIFFContainer {
             let size_start = counter + 4;
             let size_end = counter + 8;
             let chunk_size_opt = inp.get(size_start..size_end);
-            
+
             if let Some(chunk_size) = chunk_size_opt {
                 let real_chunk_size = le_to_u32(chunk_size) as usize;
                 let chunk_start = counter;
                 let chunk_end = counter + 8 + real_chunk_size;
                 let chunk_slice_opt = inp.get(chunk_start..chunk_end);
-                
+
                 if let Some(chunk_slice) = chunk_slice_opt {
                     let chunk_vec = Vec::from(chunk_slice);
                     let chunk = RegularChunk::try_from(&chunk_vec);
@@ -111,7 +111,7 @@ impl Chunk for RIFFContainer {
         let subchunk = &self.subchunks;
 
         subchunk.iter().for_each(|f| {
-            let bytes = f.get_chunk_bytes();
+            let bytes = f.to_bytes();
             bytes.iter().for_each(|g| result.push(*g));
         });
 
@@ -196,7 +196,9 @@ impl TryFrom<&Vec<u8>> for RIFFContainer {
             .get(8..12)
             .ok_or_else(|| RiffContainerError::InvalidRiffFile)?;
         let frame_id = str::from_utf8(frame_id_bytes).unwrap();
-        let subchunk_slice = value.get(12..).ok_or_else(|| RiffContainerError::InvalidRiffFile)?;
+        let subchunk_slice = value
+            .get(12..)
+            .ok_or_else(|| RiffContainerError::InvalidRiffFile)?;
         let subchunk = RIFFContainer::generate_sub_chunk(&Vec::from(subchunk_slice));
 
         Ok(RIFFContainer {
@@ -210,12 +212,8 @@ impl TryFrom<&Vec<u8>> for RegularChunk {
     type Error = ChunkError;
 
     fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
-        let first_header = value
-            .get(0..4)
-            .ok_or_else(|| ChunkError::InvalidChunk)?;
-        let size_id = value
-            .get(4..8)
-            .ok_or_else(|| ChunkError::InvalidChunk)?;
+        let first_header = value.get(0..4).ok_or_else(|| ChunkError::InvalidChunk)?;
+        let size_id = value.get(4..8).ok_or_else(|| ChunkError::InvalidChunk)?;
         let chunk_size = le_to_u32(size_id) as usize;
         let vec_size = value.len();
 
@@ -234,7 +232,6 @@ impl TryFrom<&Vec<u8>> for RegularChunk {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -247,6 +244,7 @@ mod tests {
         };
 
         assert_eq!(container.frame_id, "WEBP");
+        assert_eq!(container.get_chunk_frame_id(), "WEBP");
         assert_eq!(container.subchunks.len(), 0);
     }
 
@@ -258,7 +256,84 @@ mod tests {
         };
         let container_bytes = container.to_bytes();
 
-        assert_eq!(container_bytes[..], [0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]);
+        assert_eq!(
+            container_bytes[..],
+            [0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]
+        );
+    }
+
+    #[test]
+    fn riffc_return_get_chunk_data() {
+        let chunk = RegularChunk {
+            chunk_id: String::from("VP8L"),
+            chunk_data: Vec::from([0x52, 0x49, 0x46, 0x46]),
+        };
+        let mut container = RIFFContainer {
+            frame_id: String::from("WEBP"),
+            subchunks: Vec::new(),
+        };
+        container.push_subchunk(Box::new(chunk));
+
+        let chunk_data = container.get_chunk_data();
+
+        if let Some(chunk_data) = chunk_data {
+            assert_eq!(chunk_data.len(), 1);
+
+            let first_elem = chunk_data.get(0);
+            if let Some(first_elem) = first_elem {
+                assert_eq!(first_elem.get_chunk_id(), "VP8L");
+            }
+        } else {
+            panic!("RiffC should have chunk_data");
+        }
+    }
+
+    #[test]
+    fn riffc_return_get_chunk_id() {
+        let chunk = RegularChunk {
+            chunk_id: String::from("VP8L"),
+            chunk_data: Vec::from([0x52, 0x49, 0x46, 0x46]),
+        };
+        let mut container = RIFFContainer {
+            frame_id: String::from("WEBP"),
+            subchunks: Vec::new(),
+        };
+        container.push_subchunk(Box::new(chunk));
+
+        assert_eq!(container.get_chunk_id(), "RIFF");
+    }
+
+    #[test]
+    fn riffc_return_get_chunk_size() {
+        let chunk = RegularChunk {
+            chunk_id: String::from("VP8L"),
+            chunk_data: Vec::from([0x52, 0x49, 0x46, 0x46]),
+        };
+        let mut container = RIFFContainer {
+            frame_id: String::from("WEBP"),
+            subchunks: Vec::new(),
+        };
+        container.push_subchunk(Box::new(chunk));
+        let chunk_size = container.get_chunk_size();
+
+        assert_eq!(chunk_size, 12);
+    }
+
+    #[test]
+    fn riffc_return_get_chunk_bytes() {
+        let chunk = RegularChunk {
+            chunk_id: String::from("VP8L"),
+            chunk_data: Vec::from([0x52, 0x49, 0x46, 0x46]),
+        };
+        let chunk_bytes = chunk.to_bytes();
+        let mut container = RIFFContainer {
+            frame_id: String::from("WEBP"),
+            subchunks: Vec::new(),
+        };
+        container.push_subchunk(Box::new(chunk));
+        let rchunk_bytes = container.get_chunk_bytes();
+
+        assert_eq!(chunk_bytes, rchunk_bytes);
     }
 
     #[test]
@@ -267,20 +342,19 @@ mod tests {
             chunk_id: String::from("VP8L"),
             chunk_data: Vec::from([0x52, 0x49, 0x46, 0x46]),
         };
-        
+
         assert_eq!(chunk.chunk_id, "VP8L");
         assert_eq!(chunk.chunk_data.len(), 4);
     }
 
     #[test]
-    fn regular_chunk_return_get_chunk_data()
-    {
+    fn regular_chunk_return_get_chunk_data() {
         let chunk = RegularChunk {
             chunk_id: String::from("VP8L"),
             chunk_data: Vec::from([0x52, 0x49, 0x46, 0x46]),
         };
         let chunk_data = chunk.get_chunk_data();
-        
+
         if let Some(_) = chunk_data {
             panic!("Chunk data for RegularChunk should always be None variant");
         }
@@ -294,7 +368,7 @@ mod tests {
             chunk_data: Vec::from(test_data),
         };
         let chunk_data = chunk.get_chunk_bytes();
-        
+
         assert_eq!(chunk_data, test_data);
     }
 
@@ -331,13 +405,17 @@ mod tests {
         };
         let chunk_bytes = chunk.to_bytes();
 
-        assert_eq!(chunk_bytes, vec![0x56, 0x50, 0x38, 0x4C, 0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46]);
+        assert_eq!(
+            chunk_bytes,
+            vec![0x56, 0x50, 0x38, 0x4C, 0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46]
+        );
     }
-
 
     #[test]
     fn try_from_vec_to_regular_chunk_success() {
-        let chunk_bytes = vec![0x56u8, 0x50, 0x38, 0x4C, 0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46];
+        let chunk_bytes = vec![
+            0x56u8, 0x50, 0x38, 0x4C, 0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46,
+        ];
         let chunk = RegularChunk::try_from(&chunk_bytes);
 
         if let Ok(chunk) = chunk {
@@ -378,7 +456,9 @@ mod tests {
             panic!("Should failed, chunk_size is lower");
         }
 
-        let chunk_bytes = vec![0x56u8, 0x50, 0x38, 0x4C, 0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46, 0x00];
+        let chunk_bytes = vec![
+            0x56u8, 0x50, 0x38, 0x4C, 0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46, 0x00,
+        ];
         let chunk = RegularChunk::try_from(&chunk_bytes);
 
         if let Ok(_) = chunk {
