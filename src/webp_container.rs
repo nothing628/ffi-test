@@ -273,7 +273,7 @@ mod tests {
     }
 
     #[test]
-    fn regular_chunk_return_none_for_chunk_data()
+    fn regular_chunk_return_get_chunk_data()
     {
         let chunk = RegularChunk {
             chunk_id: String::from("VP8L"),
@@ -308,5 +308,81 @@ mod tests {
         let chunk_id = chunk.get_chunk_id();
 
         assert_eq!(chunk_id, "VP8L");
+    }
+
+    #[test]
+    fn regular_chunk_return_get_chunk_size() {
+        let test_data = [0x52u8, 0x49, 0x46, 0x46];
+        let chunk = RegularChunk {
+            chunk_id: String::from("VP8L"),
+            chunk_data: Vec::from(test_data),
+        };
+        let chunk_size = chunk.get_chunk_size();
+
+        assert_eq!(chunk_size, 4);
+    }
+
+    #[test]
+    fn regular_chunk_return_to_bytes() {
+        let test_data = [0x52u8, 0x49, 0x46, 0x46];
+        let chunk = RegularChunk {
+            chunk_id: String::from("VP8L"),
+            chunk_data: Vec::from(test_data),
+        };
+        let chunk_bytes = chunk.to_bytes();
+
+        assert_eq!(chunk_bytes, vec![0x56, 0x50, 0x38, 0x4C, 0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46]);
+    }
+
+
+    #[test]
+    fn try_from_vec_to_regular_chunk_success() {
+        let chunk_bytes = vec![0x56u8, 0x50, 0x38, 0x4C, 0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46];
+        let chunk = RegularChunk::try_from(&chunk_bytes);
+
+        if let Ok(chunk) = chunk {
+            let chunk_data = chunk.get_chunk_data();
+
+            assert_eq!(chunk.get_chunk_id(), "VP8L");
+            assert_eq!(chunk.get_chunk_size(), 4);
+            assert_eq!(chunk.get_chunk_bytes(), [0x52u8, 0x49, 0x46, 0x46]);
+
+            if let Some(_) = chunk_data {
+                panic!("Regular chunk data should be None");
+            }
+        } else {
+            panic!("Convert from vector should be success, but failed");
+        }
+    }
+
+    #[test]
+    fn try_from_vec_to_regular_chunk_failed() {
+        let chunk_bytes = vec![0x56u8, 0x50, 0x38];
+        let chunk = RegularChunk::try_from(&chunk_bytes);
+
+        if let Ok(_) = chunk {
+            panic!("Should failed, chunk_id cannot be identified");
+        }
+
+        let chunk_bytes = vec![0x56u8, 0x50, 0x38, 0x4C, 0x04, 0];
+        let chunk = RegularChunk::try_from(&chunk_bytes);
+
+        if let Ok(_) = chunk {
+            panic!("Should failed, chunk_size cannot be identified");
+        }
+
+        let chunk_bytes = vec![0x56u8, 0x50, 0x38, 0x4C, 0x04, 0, 0, 0, 0x52, 0x49];
+        let chunk = RegularChunk::try_from(&chunk_bytes);
+
+        if let Ok(_) = chunk {
+            panic!("Should failed, chunk_size is lower");
+        }
+
+        let chunk_bytes = vec![0x56u8, 0x50, 0x38, 0x4C, 0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46, 0x00];
+        let chunk = RegularChunk::try_from(&chunk_bytes);
+
+        if let Ok(_) = chunk {
+            panic!("Should failed, chunk_size is higher");
+        }
     }
 }
