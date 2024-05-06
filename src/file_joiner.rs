@@ -52,6 +52,17 @@ pub fn usize_to_le(inp: usize) -> [u8; 4] {
     bytes
 }
 
+pub fn usize_to_be(inp: usize) -> [u8; 4] {
+    let mut bytes = [0u8; 4];
+
+    bytes[3] = (inp & 0xFF) as u8;
+    bytes[2] = ((inp >> 8) & 0xFF) as u8;
+    bytes[1] = ((inp >> 16) & 0xFF) as u8;
+    bytes[0] = ((inp >> 24) & 0xFF) as u8;
+
+    bytes
+}
+
 pub fn join_webp(inp: &[u8], target: &[u8]) -> Result<Vec<u8>, JoinError> {
     let inp_vec = Vec::from(inp);
     let target_vec = Vec::from(target);
