@@ -1,7 +1,7 @@
 use crate::file_joiner::usize_to_be;
+use core::convert::From;
 
 pub struct GeneralSegment {
-    marker: [u8; 2],
     data: Vec<u8>,
 }
 
@@ -11,10 +11,10 @@ pub enum JFIFSegment {
     SOF2(GeneralSegment),
     DHT(GeneralSegment),
     DQT(GeneralSegment),
-    DRI([u8; 4]),
+    DRI([u8; 2]),
     SOS(GeneralSegment),
     RST(u8),
-    APP(GeneralSegment),
+    APP(u8, GeneralSegment),
     COM(GeneralSegment),
     IMGDATA(Vec<u8>),
     EOI,
@@ -24,19 +24,38 @@ pub struct JFIFContainer {
     segments: Vec<JFIFSegment>,
 }
 
+impl From<JFIFContainer> for Vec<u8> {
+    fn from(value: JFIFContainer) -> Self {
+        let mut result = Vec::new();
+
+        value.segments.iter().for_each(|f| {
+            let bytes = f.to_bytes();
+            result.extend_from_slice(&bytes[..]);
+        });
+
+        result
+    }
+}
+
+impl GeneralSegment {
+    pub fn get_size(&self) -> usize {
+        self.data.len() + 2
+    }
+}
+
 pub trait ToBytes {
     fn to_bytes(&self) -> Vec<u8>;
-    fn get_marker(&self) -> [u8; 2];
+    fn get_marker(&self) -> Option<[u8; 2]>;
 }
 
 impl ToBytes for GeneralSegment {
-    fn get_marker(&self) -> [u8; 2] {
-        self.marker
+    fn get_marker(&self) -> Option<[u8; 2]> {
+        None
     }
 
     fn to_bytes(&self) -> Vec<u8> {
         let mut result = Vec::new();
-        let data_len = self.data.len() + 2;
+        let data_len = self.get_size();
         let len_bytes = usize_to_be(data_len);
 
         result.push(len_bytes[2]);
@@ -48,65 +67,216 @@ impl ToBytes for GeneralSegment {
 }
 
 impl ToBytes for JFIFSegment {
-    fn get_marker(&self) -> [u8; 2] {
+    fn get_marker(&self) -> Option<[u8; 2]> {
         match self {
-            JFIFSegment::SOI => [0xFF, 0xD8],
-            JFIFSegment::SOF0(_) => [0xFF, 0xC0],
-            JFIFSegment::SOF2(_) => [0xFF, 0xC2],
-            JFIFSegment::DHT(_) => [0xFF, 0xC4],
-            JFIFSegment::DQT(_) => [0xFF, 0xDB],
-            JFIFSegment::DRI(_) => [0xFF, 0xDD],
-            JFIFSegment::SOS(_) => [0xFF, 0xDA],
-            JFIFSegment::COM(_) => [0xFF, 0xFE],
-            JFIFSegment::EOI => [0xFF, 0xD9],
-            JFIFSegment::APP(seg) => seg.marker,
-            JFIFSegment::RST(seg) => [0xFF, 0xD0 | (0b111 & seg)],
-            JFIFSegment::IMGDATA(_) => [0x00, 0x00],
+            JFIFSegment::SOI => Some([0xFF, 0xD8]),
+            JFIFSegment::SOF0(_) => Some([0xFF, 0xC0]),
+            JFIFSegment::SOF2(_) => Some([0xFF, 0xC2]),
+            JFIFSegment::DHT(_) => Some([0xFF, 0xC4]),
+            JFIFSegment::DQT(_) => Some([0xFF, 0xDB]),
+            JFIFSegment::DRI(_) => Some([0xFF, 0xDD]),
+            JFIFSegment::SOS(_) => Some([0xFF, 0xDA]),
+            JFIFSegment::COM(_) => Some([0xFF, 0xFE]),
+            JFIFSegment::EOI => Some([0xFF, 0xD9]),
+            JFIFSegment::APP(seg, _) => Some([0xFF, 0xE0 | (0xF & *seg)]),
+            JFIFSegment::RST(seg) => Some([0xFF, 0xD0 | (0b111 & seg)]),
+            JFIFSegment::IMGDATA(_) => None,
         }
     }
 
     fn to_bytes(&self) -> Vec<u8> {
         match self {
-            JFIFSegment::SOI => Vec::from(self.get_marker()),
-            JFIFSegment::EOI => Vec::from(self.get_marker()),
-            JFIFSegment::RST(_) => Vec::from(self.get_marker()),
+            JFIFSegment::SOI => Vec::from(self.get_marker().unwrap()),
+            JFIFSegment::EOI => Vec::from(self.get_marker().unwrap()),
+            JFIFSegment::RST(_) => Vec::from(self.get_marker().unwrap()),
             JFIFSegment::IMGDATA(vec) => vec.clone(),
-            JFIFSegment::DRI(payload) => Vec::from(payload),
+            JFIFSegment::DRI(payload) => {
+                let mut result = Vec::from(self.get_marker().unwrap());
+                result.push(0x00);
+                result.push(0x04);
+                result.extend(payload);
+                result
+            },
             JFIFSegment::SOF0(seg) => {
-                let mut result = Vec::from(self.get_marker());
+                let mut result = Vec::from(self.get_marker().unwrap());
                 result.extend_from_slice(&seg.to_bytes());
                 result
-            },
+            }
             JFIFSegment::SOF2(seg) => {
-                let mut result = Vec::from(self.get_marker());
+                let mut result = Vec::from(self.get_marker().unwrap());
                 result.extend_from_slice(&seg.to_bytes());
                 result
-            },
+            }
             JFIFSegment::SOS(seg) => {
-                let mut result = Vec::from(self.get_marker());
+                let mut result = Vec::from(self.get_marker().unwrap());
                 result.extend_from_slice(&seg.to_bytes());
                 result
-            },
+            }
             JFIFSegment::COM(seg) => {
-                let mut result = Vec::from(self.get_marker());
+                let mut result = Vec::from(self.get_marker().unwrap());
                 result.extend_from_slice(&seg.to_bytes());
                 result
-            },
+            }
             JFIFSegment::DQT(seg) => {
-                let mut result = Vec::from(self.get_marker());
+                let mut result = Vec::from(self.get_marker().unwrap());
                 result.extend_from_slice(&seg.to_bytes());
                 result
-            },
+            }
             JFIFSegment::DHT(seg) => {
-                let mut result = Vec::from(self.get_marker());
+                let mut result = Vec::from(self.get_marker().unwrap());
                 result.extend_from_slice(&seg.to_bytes());
                 result
-            },
-            JFIFSegment::APP(seg) => {
-                let mut result = Vec::from(seg.get_marker());
+            }
+            JFIFSegment::APP(_, seg) => {
+                let mut result = Vec::from(self.get_marker().unwrap());
                 result.extend_from_slice(&seg.to_bytes());
                 result
-            },
+            }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn general_segment_len() {
+        let segment = GeneralSegment {
+            data: vec![0x0F, 0x0D, 0x44],
+        };
+        let segment_len = segment.get_size();
+
+        assert_eq!(segment_len, 5);
+    }
+
+    fn general_segment_bytes() {
+        // TODO:
+    }
+
+    #[test]
+    fn segment_soi_marker() {
+        let segment = JFIFSegment::SOI;
+        let marker = segment.get_marker();
+
+        assert_eq!(marker, Some([0xFF, 0xD8]));
+    }
+
+    #[test]
+    fn segment_soi_bytes() {
+        let segment = JFIFSegment::SOI;
+        let bytes = segment.to_bytes();
+
+        assert_eq!(bytes, [0xFF, 0xD8]);
+    }
+
+    #[test]
+    fn segment_eoi_marker() {
+        let segment = JFIFSegment::EOI;
+        let marker = segment.get_marker();
+
+        assert_eq!(marker, Some([0xFF, 0xD9]));
+    }
+
+    #[test]
+    fn segment_eoi_bytes() {
+        let segment = JFIFSegment::EOI;
+        let bytes = segment.to_bytes();
+
+        assert_eq!(bytes, [0xFF, 0xD9]);
+    }
+
+    #[test]
+    fn segment_rst_marker() {
+        for i in 0..8 {
+            let segment = JFIFSegment::RST(i);
+            let marker = segment.get_marker();
+    
+            assert_eq!(marker, Some([0xFF, 0xD0 + i]));
+        }
+    }
+
+    #[test]
+    fn segment_rst_bytes() {
+        for i in 0..8 {
+            let segment = JFIFSegment::RST(i);
+            let bytes = segment.to_bytes();
+    
+            assert_eq!(bytes, [0xFF, 0xD0 + i]);
+        }
+    }
+
+    #[test]
+    fn segment_dri_marker() {
+        let segment = JFIFSegment::DRI([0x04, 0x02]);
+        let marker = segment.get_marker();
+
+        assert_eq!(marker, Some([0xFF, 0xDD]));
+    }
+
+    #[test]
+    fn segment_dri_bytes() {
+        let segment = JFIFSegment::DRI([0x04, 0x02]);
+        let bytes = segment.to_bytes();
+
+        assert_eq!(bytes, [0xFF, 0xDD, 0x00, 0x04, 0x04, 0x02]);
+    }
+
+    #[test]
+    fn segment_img_marker() {
+        let segment = JFIFSegment::IMGDATA(vec![0x0A, 0x0B]);
+        let marker = segment.get_marker();
+
+        assert_eq!(marker, None);
+    }
+
+    #[test]
+    fn segment_img_bytes() {
+        let segment = JFIFSegment::IMGDATA(vec![0x0A, 0x0B]);
+        let bytes = segment.to_bytes();
+
+        assert_eq!(bytes, [0x0A, 0x0B]);
+    }
+
+    #[test]
+    fn segment_app_marker() {
+        for i in 0..0xF {
+            let segment= JFIFSegment::APP(i, GeneralSegment {
+                data: vec![0x02, 0x04]
+            });
+            let marker = segment.get_marker();
+
+            assert_eq!(marker, Some([0xFF, 0xE0 + i]));
+        }
+    }
+
+    #[test]
+    fn segment_app_bytes() {
+        let segment= JFIFSegment::APP(0, GeneralSegment {
+            data: vec![0x02, 0x04]
+        });
+        let bytes = segment.to_bytes();
+
+        assert_eq!(bytes, [0xFF, 0xE0, 0x00, 0x04, 0x02, 0x04]);
+    }
+
+    #[test]
+    fn segment_com_marker() {
+        let segment= JFIFSegment::COM(GeneralSegment {
+            data: vec![0x02, 0x04]
+        });
+        let marker = segment.get_marker();
+
+        assert_eq!(marker, Some([0xFF, 0xFE]));
+    }
+
+    #[test]
+    fn segment_com_bytes() {
+        let segment= JFIFSegment::COM(GeneralSegment {
+            data: vec![0x02, 0x04]
+        });
+        let bytes = segment.to_bytes();
+
+        assert_eq!(bytes, [0xFF, 0xFE, 0x00, 0x04, 0x02, 0x04]);
     }
 }
