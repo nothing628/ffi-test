@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::file_joiner::{le_to_u32, usize_to_le};
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 pub enum RiffContainerError {
     #[error("Invalid riff file")]
     InvalidRiffFile,
@@ -16,7 +16,7 @@ pub enum RiffContainerError {
     MissingHeader,
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 pub enum ChunkError {
     #[error("Invalid chunk")]
     InvalidChunk,
@@ -120,7 +120,7 @@ impl Chunk for RIFFContainer {
 
     fn get_chunk_size(&self) -> usize {
         let chunk_bytes = self.get_chunk_bytes();
-        chunk_bytes.len()
+        chunk_bytes.len() + 4 // 4 bytes from frame id
     }
 
     fn to_bytes(&self) -> Vec<u8> {
@@ -258,7 +258,7 @@ mod tests {
 
         assert_eq!(
             container_bytes[..],
-            [0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]
+            [0x52, 0x49, 0x46, 0x46, 0x04, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]
         );
     }
 
@@ -316,7 +316,7 @@ mod tests {
         container.push_subchunk(Box::new(chunk));
         let chunk_size = container.get_chunk_size();
 
-        assert_eq!(chunk_size, 12);
+        assert_eq!(chunk_size, 16);
     }
 
     #[test]
@@ -334,6 +334,28 @@ mod tests {
         let rchunk_bytes = container.get_chunk_bytes();
 
         assert_eq!(chunk_bytes, rchunk_bytes);
+    }
+
+    #[test]
+    fn riffc_return_to_bytes() {
+        let chunk = RegularChunk {
+            chunk_id: String::from("VP8L"),
+            chunk_data: Vec::from([0x52, 0x49, 0x46, 0x46]),
+        };
+        let mut container = RIFFContainer {
+            frame_id: String::from("WEBP"),
+            subchunks: Vec::new(),
+        };
+        container.push_subchunk(Box::new(chunk));
+        let chunk_bytes = container.to_bytes();
+
+        assert_eq!(
+            chunk_bytes,
+            vec![
+                0x52, 0x49, 0x46, 0x46, 0x10, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38,
+                0x4C, 0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46
+            ]
+        );
     }
 
     #[test]
@@ -452,8 +474,11 @@ mod tests {
         let chunk_bytes = vec![0x56u8, 0x50, 0x38, 0x4C, 0x04, 0, 0, 0, 0x52, 0x49];
         let chunk = RegularChunk::try_from(&chunk_bytes);
 
-        if let Ok(_) = chunk {
-            panic!("Should failed, chunk_size is lower");
+        match chunk {
+            Ok(_) => panic!("Should failed, chunk_size is lower"),
+            Err(err) => {
+                assert_eq!(err, ChunkError::SizeMismatch);
+            }
         }
 
         let chunk_bytes = vec![
@@ -461,8 +486,88 @@ mod tests {
         ];
         let chunk = RegularChunk::try_from(&chunk_bytes);
 
-        if let Ok(_) = chunk {
-            panic!("Should failed, chunk_size is higher");
+        match chunk {
+            Ok(_) => panic!("Should failed, chunk_size is lower"),
+            Err(err) => {
+                assert_eq!(err, ChunkError::SizeMismatch);
+            }
+        }
+    }
+
+    #[test]
+    fn try_from_vec_to_riffc_chunk_success() {
+        let chunk_bytes = vec![
+            0x52, 0x49, 0x46, 0x46, 0x10, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x4C,
+            0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46,
+        ];
+        let chunk = RIFFContainer::try_from(&chunk_bytes);
+
+        match chunk {
+            Ok(chunk) => {
+                let chunk_data = chunk.get_chunk_data();
+
+                assert_eq!(chunk.get_chunk_id(), "RIFF");
+                assert_eq!(chunk.get_chunk_size(), 16);
+                assert_eq!(
+                    chunk.get_chunk_bytes(),
+                    [0x56, 0x50, 0x38, 0x4C, 0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46]
+                );
+
+                if let None = chunk_data {
+                    panic!("RIFFContainer data should be Some");
+                }
+            }
+            Err(err) => {
+                panic!(
+                    "Convert from vector should be success, but failed. Err {}",
+                    err
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn try_from_vec_to_riffc_chunk_failed() {
+        let chunk_bytes = vec![
+            0x52, 0xFF, 0x46, 0x46, 0x10, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x4C,
+            0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46,
+        ];
+        let chunk = RIFFContainer::try_from(&chunk_bytes);
+
+        match chunk {
+            Ok(_) => {
+                panic!("Should failed");
+            }
+            Err(err) => {
+                assert_eq!(err, RiffContainerError::MissingHeader);
+            }
+        }
+
+        let chunk_bytes = vec![
+            0x52, 0x49, 0x46, 0x46, 0x0C, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x4C,
+            0x04, 0, 0, 0, 0x52, 0x49, 0x46, 0x46,
+        ];
+        let chunk = RIFFContainer::try_from(&chunk_bytes);
+
+        match chunk {
+            Ok(_) => {
+                panic!("Should failed");
+            }
+            Err(err) => {
+                assert_eq!(err, RiffContainerError::SizeMismatch);
+            }
+        }
+
+        let chunk_bytes = vec![0x52, 0x49, 0x46, 0x46, 0x0C, 0, 0];
+        let chunk = RIFFContainer::try_from(&chunk_bytes);
+
+        match chunk {
+            Ok(_) => {
+                panic!("Should failed");
+            }
+            Err(err) => {
+                assert_eq!(err, RiffContainerError::InvalidRiffFile);
+            }
         }
     }
 }
