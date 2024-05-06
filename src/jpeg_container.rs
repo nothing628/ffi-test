@@ -37,6 +37,14 @@ impl From<JFIFContainer> for Vec<u8> {
     }
 }
 
+impl From<&Vec<u8>> for JFIFContainer {
+    fn from(value: &Vec<u8>) -> Self {
+        JFIFContainer {
+            segments: Vec::new()
+        }
+    }
+}
+
 impl GeneralSegment {
     pub fn get_size(&self) -> usize {
         self.data.len() + 2
@@ -150,8 +158,24 @@ mod tests {
         assert_eq!(segment_len, 5);
     }
 
+    #[test]
+    fn general_segment_marker_return_none() {
+        let segment = GeneralSegment {
+            data: vec![0x0F, 0x0D, 0x44],
+        };
+        let marker = segment.get_marker();
+
+        assert_eq!(marker, None);
+    }
+
+    #[test]
     fn general_segment_bytes() {
-        // TODO:
+        let segment = GeneralSegment {
+            data: vec![0x0F, 0x0D, 0x44],
+        };
+        let bytes = segment.to_bytes();
+
+        assert_eq!(bytes, [0x00, 0x05, 0x0F, 0x0D, 0x44]);
     }
 
     #[test]
@@ -278,5 +302,105 @@ mod tests {
         let bytes = segment.to_bytes();
 
         assert_eq!(bytes, [0xFF, 0xFE, 0x00, 0x04, 0x02, 0x04]);
+    }
+
+    #[test]
+    fn segment_sof0_marker() {
+        let segment= JFIFSegment::SOF0(GeneralSegment {
+            data: vec![0x02, 0x04]
+        });
+        let marker = segment.get_marker();
+
+        assert_eq!(marker, Some([0xFF, 0xC0]));
+    }
+
+    #[test]
+    fn segment_sof0_bytes() {
+        let segment= JFIFSegment::SOF0(GeneralSegment {
+            data: vec![0x02, 0x04]
+        });
+        let bytes = segment.to_bytes();
+
+        assert_eq!(bytes, [0xFF, 0xC0, 0x00, 0x04, 0x02, 0x04]);
+    }
+
+    #[test]
+    fn segment_sof2_marker() {
+        let segment= JFIFSegment::SOF2(GeneralSegment {
+            data: vec![0x02, 0x04]
+        });
+        let marker = segment.get_marker();
+
+        assert_eq!(marker, Some([0xFF, 0xC2]));
+    }
+
+    #[test]
+    fn segment_sof2_bytes() {
+        let segment= JFIFSegment::SOF2(GeneralSegment {
+            data: vec![0x02, 0x04]
+        });
+        let bytes = segment.to_bytes();
+
+        assert_eq!(bytes, [0xFF, 0xC2, 0x00, 0x04, 0x02, 0x04]);
+    }
+
+    #[test]
+    fn segment_dht_marker() {
+        let segment= JFIFSegment::DHT(GeneralSegment {
+            data: vec![0x02, 0x04]
+        });
+        let marker = segment.get_marker();
+
+        assert_eq!(marker, Some([0xFF, 0xC4]));
+    }
+
+    #[test]
+    fn segment_dht_bytes() {
+        let segment= JFIFSegment::DHT(GeneralSegment {
+            data: vec![0x02, 0x04]
+        });
+        let bytes = segment.to_bytes();
+
+        assert_eq!(bytes, [0xFF, 0xC4, 0x00, 0x04, 0x02, 0x04]);
+    }
+
+    #[test]
+    fn segment_dqt_marker() {
+        let segment= JFIFSegment::DQT(GeneralSegment {
+            data: vec![0x02, 0x04]
+        });
+        let marker = segment.get_marker();
+
+        assert_eq!(marker, Some([0xFF, 0xDB]));
+    }
+
+    #[test]
+    fn segment_dqt_bytes() {
+        let segment= JFIFSegment::DQT(GeneralSegment {
+            data: vec![0x02, 0x04]
+        });
+        let bytes = segment.to_bytes();
+
+        assert_eq!(bytes, [0xFF, 0xDB, 0x00, 0x04, 0x02, 0x04]);
+    }
+
+    #[test]
+    fn segment_sos_marker() {
+        let segment= JFIFSegment::SOS(GeneralSegment {
+            data: vec![0x02, 0x04]
+        });
+        let marker = segment.get_marker();
+
+        assert_eq!(marker, Some([0xFF, 0xDA]));
+    }
+
+    #[test]
+    fn segment_sos_bytes() {
+        let segment= JFIFSegment::SOS(GeneralSegment {
+            data: vec![0x02, 0x04]
+        });
+        let bytes = segment.to_bytes();
+
+        assert_eq!(bytes, [0xFF, 0xDA, 0x00, 0x04, 0x02, 0x04]);
     }
 }
