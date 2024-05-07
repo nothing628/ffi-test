@@ -41,6 +41,40 @@ pub fn le_to_u32(inp: &[u8]) -> u32 {
     output
 }
 
+pub fn be_to_usize(inp: &[u8]) -> usize {
+    let len = inp.len();
+    let output = match len {
+        0 => 0,
+        1 => {
+            return inp[0].into();
+        }
+        2 => {
+            let mut out: usize = inp[1].into();
+            out = (inp[0] as usize) << 8 | out;
+
+            return out;
+        }
+        3 => {
+            let mut out: usize = inp[2].into();
+            out = (inp[1] as usize) << 8 | out;
+            out = (inp[0] as usize) << 16 | out;
+
+            return out;
+        }
+        4 => {
+            let mut out: usize = inp[3].into();
+            out = (inp[2] as usize) << 8 | out;
+            out = (inp[1] as usize) << 16 | out;
+            out = (inp[0] as usize) << 24 | out;
+
+            return out;
+        }
+        _ => std::usize::MAX,
+    };
+
+    output
+}
+
 pub fn usize_to_le(inp: usize) -> [u8; 4] {
     let mut bytes = [0u8; 4];
 
