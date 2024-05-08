@@ -4,10 +4,11 @@ use crate::jpeg::container::JFIFContainer;
 use crate::jpeg::container::JFIFSegment;
 use crate::jpeg::container::ToBytes;
 use anyhow::anyhow;
-use anyhow::Result;
+use anyhow::Result as AnyResult;
 use core::iter::Peekable;
 use core::slice::Iter;
 use thiserror::Error;
+use std::convert::{From, TryFrom};
 
 #[derive(Error, Debug)]
 pub enum JPEGParserError {
@@ -39,7 +40,7 @@ pub enum JPEGParserError {
     ExpectMarker,
 }
 
-fn read_segments(iter: &mut Box<&mut Peekable<Iter<u8>>>) -> Result<Vec<u8>> {
+fn read_segments(iter: &mut Box<&mut Peekable<Iter<u8>>>) -> AnyResult<Vec<u8>> {
     let size_arr = [*iter.next().unwrap(), *iter.next().unwrap()];
     let size = be_to_usize(&size_arr);
     let mut result = Vec::new();
@@ -234,3 +235,11 @@ impl TryFrom<&Vec<u8>> for JFIFContainer {
         Ok(result)
     }
 }
+
+// impl From<&Vec<u8>> for JFIFContainer {
+//     fn from(value: &Vec<u8>) -> Self {
+//         let segments = Vec::new();
+
+//         JFIFContainer::new(segments)
+//     }
+// }

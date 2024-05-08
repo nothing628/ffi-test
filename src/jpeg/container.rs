@@ -1,6 +1,7 @@
 use crate::file_joiner::usize_to_be;
 use core::convert::From;
 
+#[derive(Debug)]
 pub struct GeneralSegment {
     data: Vec<u8>,
 }
@@ -13,6 +14,7 @@ impl GeneralSegment {
     }
 }
 
+#[derive(Debug)]
 pub enum JFIFSegment {
     SOI,
     SOF0(GeneralSegment),
@@ -38,18 +40,9 @@ impl JFIFContainer {
             segments
         }
     }
-}
 
-impl From<JFIFContainer> for Vec<u8> {
-    fn from(value: JFIFContainer) -> Self {
-        let mut result = Vec::new();
-
-        value.segments.iter().for_each(|f| {
-            let bytes = f.to_bytes();
-            result.extend_from_slice(&bytes[..]);
-        });
-
-        result
+    pub fn get_segments(&self) -> &Vec<JFIFSegment> {
+        &self.segments
     }
 }
 
