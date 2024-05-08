@@ -212,6 +212,8 @@ impl TryFrom<&Vec<u8>> for JFIFContainer {
             current_byte = val_iter.next();
         }
 
+        last_byte = val_iter.next();
+        current_byte = val_iter.next();
         let mut last_byte_ = *last_byte.unwrap();
         let mut current_byte_ = *current_byte.unwrap();
         let mut img_data: Vec<u8> = Vec::new();

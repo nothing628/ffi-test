@@ -2,7 +2,7 @@ use anyhow::Result;
 use ffi_test::jpeg::container::JFIFContainer;
 use ffi_test::jpeg::container::JFIFSegment;
 use ffi_test::jpeg::container::ToBytes;
-use std::fs::read;
+use std::fs::{read, write as writefs};
 
 pub fn main() -> Result<()> {
     let jpeg_test = read("./test.jpeg")?;
@@ -32,6 +32,7 @@ pub fn main() -> Result<()> {
             let convert_back = Vec::from(container);
 
             println!("Output length : {}", convert_back.len());
+            writefs("output.jpeg", &convert_back[..])?;
         }
         Err(err) => {
             println!("{}", err);
