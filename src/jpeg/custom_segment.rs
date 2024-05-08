@@ -33,7 +33,15 @@ pub fn split_bytes(data: &[u8]) -> Vec<CustomSegment> {
 }
 
 pub fn join_bytes(data: &Vec<CustomSegment>) -> Vec<u8> {
-    let result = Vec::new();
+    let mut result = Vec::new();
+    let mut vec: Vec<&CustomSegment> = Vec::new();
+
+    data.iter().for_each(|f| {vec.push(f)});
+    vec.sort_by(|a, b| a.order.cmp(&b.order));
+    vec.iter()
+        .for_each(|f| {
+            result.extend(&f.data);
+        });
 
     result
 }
