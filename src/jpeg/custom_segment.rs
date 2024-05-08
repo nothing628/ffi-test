@@ -1,5 +1,7 @@
-use std::convert::From;
+use std::convert::{From, TryFrom};
+use thiserror::Error;
 use super::container::{GeneralSegment, JFIFSegment};
+use crate::file_joiner::be_to_usize;
 
 pub const CUSTOM_SEGMENT_APP: u8 = 10;
 pub const CUSTOM_SEGMENT_NAME: &str = "MILF";
@@ -8,6 +10,18 @@ pub const CUSTOM_SEGMENT_MAX_SIZE: u16 = 0xFFFF - 0x23; // 65500 bytes
 pub struct CustomSegment {
     data: Vec<u8>,
     order: u16,
+}
+
+#[derive(Error, Debug)]
+pub enum CustomSegmentError {
+    #[error("Invalid Segment type")]
+    InvalidSegmentType,
+
+    #[error("Invalid App Num")]
+    InvalidAppNum,
+
+    #[error("Segment missing order and data")]
+    EmptyDataOrOrder,
 }
 
 impl CustomSegment {
@@ -58,6 +72,42 @@ impl From<CustomSegment> for JFIFSegment {
         let segment = GeneralSegment::new(data);
 
         JFIFSegment::APP(CUSTOM_SEGMENT_APP, segment)
+    }
+}
+
+impl TryFrom<&JFIFSegment> for CustomSegment {
+    type Error = CustomSegmentError;
+
+    fn try_from(value: &JFIFSegment) -> Result<Self, Self::Error> {
+        match value {
+            JFIFSegment::APP(app_num, data) => {
+                if *app_num != CUSTOM_SEGMENT_APP {
+                    return Err(CustomSegmentError::InvalidAppNum);
+                }
+
+                let raw_data = data.get_data();
+                let raw_order = raw_data.get(6..8);
+                let raw_bytes = raw_data.get(8..);
+
+                match (raw_order,raw_bytes) {
+                    (Some(order), Some(bytes)) => {
+                        let order_be = be_to_usize(order) as u16;
+                        let custom_segment = CustomSegment {
+                            order: order_be,
+                            data: Vec::from(bytes),
+                        };
+        
+                        return Ok(custom_segment);
+                    },
+                    _ => {
+                        return Err(CustomSegmentError::EmptyDataOrOrder);
+                    }
+                }
+            },
+            _ => {
+                return Err(CustomSegmentError::InvalidSegmentType);
+            }
+        }
     }
 }
 

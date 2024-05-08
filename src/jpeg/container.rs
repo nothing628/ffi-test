@@ -12,6 +12,10 @@ impl GeneralSegment {
             data,
         }
     }
+
+    pub fn get_data(&self) -> &Vec<u8> {
+        &self.data
+    }
 }
 
 #[derive(Debug)]
