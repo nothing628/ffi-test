@@ -7,12 +7,13 @@ pub const CUSTOM_SEGMENT_APP: u8 = 10;
 pub const CUSTOM_SEGMENT_NAME: &str = "MILF";
 pub const CUSTOM_SEGMENT_MAX_SIZE: u16 = 0xFFFF - 0x23; // 65500 bytes
 
+#[derive(Debug, PartialEq)]
 pub struct CustomSegment {
     data: Vec<u8>,
     order: u16,
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum CustomSegmentError {
     #[error("Invalid Segment type")]
     InvalidSegmentType,
@@ -132,6 +133,47 @@ mod tests {
                 assert_eq!(data_vec, [0x00, 0x0C, 0x4D, 0x49, 0x4C, 0x46, 0x00, 0x00, 0x00, 0xFF, 0xBA, 0x28]);
             },
             _ => panic!("JFIF Segment not APP")
+        }
+    }
+
+    #[test]
+    fn jfif_segment_to_custom_segment() {
+        let jfif_segment = JFIFSegment::SOI;
+        let try_custom_segment = CustomSegment::try_from(&jfif_segment);
+
+        match try_custom_segment {
+            Ok(_) => {
+                panic!("Conversion using other segment type except APP segment should fail");
+            }
+            Err(err) => {
+                assert_eq!(err, CustomSegmentError::InvalidSegmentType);
+            }
+        }
+
+        let data = GeneralSegment::new(vec![0xFF, 0xFF, 0x12]);
+        let app_segment = JFIFSegment::APP(0, data);
+        let try_custom_segment = CustomSegment::try_from(&app_segment);
+
+        match try_custom_segment {
+            Ok(_) => {
+                panic!("Conversion using other app num should fail");
+            }
+            Err(err) => {
+                assert_eq!(err, CustomSegmentError::InvalidAppNum);
+            }
+        }
+
+        let data = GeneralSegment::new(vec![0xFF, 0xFF, 0x12]);
+        let app_segment = JFIFSegment::APP(CUSTOM_SEGMENT_APP, data);
+        let try_custom_segment = CustomSegment::try_from(&app_segment);
+
+        match try_custom_segment {
+            Ok(_) => {
+                panic!("Should fail because can find data or size");
+            }
+            Err(err) => {
+                assert_eq!(err, CustomSegmentError::EmptyDataOrOrder);
+            }
         }
     }
 }

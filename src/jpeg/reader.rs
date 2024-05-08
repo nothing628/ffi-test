@@ -8,7 +8,7 @@ use anyhow::Result as AnyResult;
 use core::iter::Peekable;
 use core::slice::Iter;
 use thiserror::Error;
-use std::convert::{From, TryFrom};
+use std::convert::TryFrom;
 
 #[derive(Error, Debug)]
 pub enum JPEGParserError {
