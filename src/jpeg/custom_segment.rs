@@ -10,6 +10,34 @@ pub struct CustomSegment {
     order: u16,
 }
 
+impl CustomSegment {
+    pub fn new(data: &[u8], order: u16) -> Self {
+        Self {
+            data: Vec::from(data),
+            order,
+        }
+    }
+}
+
+pub fn split_bytes(data: &[u8]) -> Vec<CustomSegment> {
+    let mut result = Vec::new();
+    let mut order = 0u16;
+
+    data.chunks(CUSTOM_SEGMENT_MAX_SIZE.into())
+        .for_each(|f| {
+            result.push(CustomSegment::new(f, order));
+            order = order + 1;
+        });
+
+    result
+}
+
+pub fn join_bytes(data: &Vec<CustomSegment>) -> Vec<u8> {
+    let result = Vec::new();
+
+    result
+}
+
 impl From<CustomSegment> for JFIFSegment {
     fn from(value: CustomSegment) -> Self {
         let mut data = Vec::from(CUSTOM_SEGMENT_NAME.as_bytes());
