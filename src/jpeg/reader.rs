@@ -235,11 +235,3 @@ impl TryFrom<&Vec<u8>> for JFIFContainer {
         Ok(result)
     }
 }
-
-// impl From<&Vec<u8>> for JFIFContainer {
-//     fn from(value: &Vec<u8>) -> Self {
-//         let segments = Vec::new();
-
-//         JFIFContainer::new(segments)
-//     }
-// }
