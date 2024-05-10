@@ -3,6 +3,7 @@ use image::{
     load_from_memory_with_format, DynamicImage, GenericImage, GenericImageView, ImageFormat,
     ImageResult, Pixel,
 };
+use crate::file_joiner::usize_to_le;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum OriginX {
@@ -38,26 +39,33 @@ pub struct Dimension {
     height: u32,
 }
 
+impl Dimension {
+    pub fn new(width: u32, height: u32) -> Self {
+        Self {
+            width,
+            height,
+        }
+    }
+}
+
 fn solve_absolute_position(
-    target_img: &DynamicImage,
-    watermark_img: &DynamicImage,
+    target: &Dimension,
+    watermark: &Dimension,
     origin_x: &OriginX,
     origin_y: &OriginY,
     offset: &Point,
 ) -> Point {
-    let (target_w, target_h) = target_img.dimensions();
-    let (watermark_w, watermark_h) = watermark_img.dimensions();
     let offset_x = offset.x;
     let offset_y = offset.y;
     let abs_x = if *origin_x == OriginX::Left {
         offset_x
     } else {
-        target_w - watermark_w - offset_x
+        target.width - watermark.width - offset_x
     };
     let abs_y = if *origin_y == OriginY::Top {
         offset_y
     } else {
-        target_h - watermark_h - offset_y
+        target.height - watermark.height - offset_y
     };
 
     Point { x: abs_x, y: abs_y }
@@ -77,16 +85,40 @@ impl WatermarkTask {
         }
     }
 
+    pub fn get_watermark_dimension(&self) -> Option<Dimension> {
+        match &self.watermark {
+            Some(watermark_img) => {
+                let (watermark_w, watermark_h) = watermark_img.dimensions();
+
+                Some(Dimension::new(watermark_w, watermark_h))
+            }
+            _ => None
+        }
+    }
+
+    pub fn get_target_dimension(&self) -> Option<Dimension> {
+        match &self.target {
+            Some(target_img) => {
+                let (width, height) = target_img.dimensions();
+
+                Some(Dimension::new(width, height))
+            }
+            _ => None
+        }
+    }
+
     pub fn get_absolute_watermark_position(&self) -> Option<Point> {
         let offset_x = self.x;
         let offset_y = self.y;
         let offset = Point { x: offset_x, y: offset_y };
         let origin_x = &self.origin_x;
         let origin_y = &self.origin_y;
+        let watermark_dim = self.get_watermark_dimension();
+        let target_dim = self.get_target_dimension();
 
-        match (&self.target, &self.watermark) {
-            (Some(target_img), Some(watermark_img)) => {
-                let pos = solve_absolute_position(&target_img, &watermark_img, origin_x, origin_y, &offset);
+        match (target_dim, watermark_dim) {
+            (Some(target_dim), Some(watermark_dim)) => {
+                let pos = solve_absolute_position(&target_dim, &watermark_dim, origin_x, origin_y, &offset);
 
                 return Some(pos);
             }
@@ -172,4 +204,26 @@ pub fn set_target(
     watermark_task.set_target(Some(target));
 
     Ok(())
+}
+
+impl From<Point> for [u8;8] {
+    fn from(value: Point) -> Self {
+        let x = usize_to_le(value.x as usize);
+        let y = usize_to_le(value.y as usize);
+        
+        [
+            x[0], x[1], x[2], x[3], y[0], y[1], y[2], y[3]
+        ]
+    }
+}
+
+impl From<Dimension> for [u8;8] {
+    fn from(value: Dimension) -> Self {
+        let w = usize_to_le(value.width as usize);
+        let h = usize_to_le(value.height as usize);
+
+        [
+            w[0], w[1], w[2], w[3], h[0], h[1], h[2], h[3]
+        ]
+    }
 }

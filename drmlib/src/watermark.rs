@@ -191,6 +191,11 @@ pub extern "C" fn get_output_webp(ptr: *mut WatermarkTask, target: *mut ArrResul
         return 1;
     }
 
+    let watermark_pos: [u8;8] = watermark_task.get_absolute_watermark_position().unwrap().into();
+    let watermark_dim: [u8;8] = watermark_task.get_watermark_dimension().unwrap().into();
+    old_bytes.extend(watermark_pos);
+    old_bytes.extend(watermark_dim);
+
     let join_result = join_webp(&bytes, &old_bytes);
     if let Ok(result) = join_result {
         target_arr.arr = result;
@@ -231,6 +236,11 @@ pub extern "C" fn get_output_jpeg(ptr: *mut WatermarkTask, target: *mut ArrResul
     } else {
         return 1;
     }
+
+    let watermark_pos: [u8;8] = watermark_task.get_absolute_watermark_position().unwrap().into();
+    let watermark_dim: [u8;8] = watermark_task.get_watermark_dimension().unwrap().into();
+    old_bytes.extend(watermark_pos);
+    old_bytes.extend(watermark_dim);
 
     let join_result = join_jpeg(&bytes, &old_bytes);
     if let Ok(result) = join_result {
