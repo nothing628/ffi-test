@@ -87,8 +87,8 @@ impl TryFrom<&JFIFSegment> for CustomSegment {
                 }
 
                 let raw_data = data.get_data();
-                let raw_order = raw_data.get(6..8);
-                let raw_bytes = raw_data.get(8..);
+                let raw_order = raw_data.get(5..7);
+                let raw_bytes = raw_data.get(7..);
 
                 match (raw_order,raw_bytes) {
                     (Some(order), Some(bytes)) => {
@@ -137,7 +137,7 @@ mod tests {
     }
 
     #[test]
-    fn jfif_segment_to_custom_segment() {
+    fn jfif_segment_to_custom_segment_should_error() {
         let jfif_segment = JFIFSegment::SOI;
         let try_custom_segment = CustomSegment::try_from(&jfif_segment);
 
@@ -173,6 +173,29 @@ mod tests {
             }
             Err(err) => {
                 assert_eq!(err, CustomSegmentError::EmptyDataOrOrder);
+            }
+        }
+    }
+
+    #[test]
+    fn jfif_segment_to_custom_segment_should_success() {
+        let header = CUSTOM_SEGMENT_NAME.as_bytes();
+        let mut data = Vec::from(header);
+        data.push(0x00);
+        data.push(0x00);
+        data.push(0x10);
+        data.push(0x00);
+        let general_segment = GeneralSegment::new(data);
+        let jfif_segment = JFIFSegment::APP(CUSTOM_SEGMENT_APP, general_segment);
+        let try_custom_segment = CustomSegment::try_from(&jfif_segment);
+
+        match try_custom_segment {
+            Ok(custom_segment) => {
+                assert_eq!(custom_segment.order, 16);
+                assert_eq!(custom_segment.data, [0x00]);
+            },
+            Err(err) => {
+                panic!("Should not error converting to custom_segment : {}", err);
             }
         }
     }
