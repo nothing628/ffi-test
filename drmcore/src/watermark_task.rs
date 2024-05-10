@@ -33,6 +33,11 @@ pub struct Point {
     y: u32,
 }
 
+pub struct Dimension {
+    width: u32,
+    height: u32,
+}
+
 fn solve_absolute_position(
     target_img: &DynamicImage,
     watermark_img: &DynamicImage,
@@ -72,6 +77,25 @@ impl WatermarkTask {
         }
     }
 
+    pub fn get_absolute_watermark_position(&self) -> Option<Point> {
+        let offset_x = self.x;
+        let offset_y = self.y;
+        let offset = Point { x: offset_x, y: offset_y };
+        let origin_x = &self.origin_x;
+        let origin_y = &self.origin_y;
+
+        match (&self.target, &self.watermark) {
+            (Some(target_img), Some(watermark_img)) => {
+                let pos = solve_absolute_position(&target_img, &watermark_img, origin_x, origin_y, &offset);
+
+                return Some(pos);
+            }
+            _ => {}
+        }
+
+        None
+    }
+
     pub fn set_position(&mut self, x: u32, y: u32, origin_x: OriginX, origin_y: OriginY) {
         self.x = x;
         self.y = y;
@@ -96,20 +120,15 @@ impl WatermarkTask {
     }
 
     pub fn process(&mut self) -> Result<()> {
-        let target = &mut self.target;
+        let target = &self.target;
         let watermark = &self.watermark;
-        let offset_x = self.x;
-        let offset_y = self.y;
-        let offset = Point { x: offset_x, y: offset_y };
-        let origin_x = &self.origin_x;
-        let origin_y = &self.origin_y;
 
-        if let Some(target_img) = target {
-            if let Some(watermark_img) = watermark {
+        match (target,watermark) {
+            (Some(target_img), Some(watermark_img)) => {
                 let (watermark_w, watermark_h) = watermark_img.dimensions();
-                let pos = solve_absolute_position(&target_img, &watermark_img, origin_x, origin_y, &offset);
+                let position = self.get_absolute_watermark_position().unwrap();
                 let mut clone_target = target_img.clone();
-                let mut sub_img = clone_target.sub_image(pos.x, pos.y, watermark_w, watermark_h);
+                let mut sub_img = clone_target.sub_image(position.x, position.y, watermark_w, watermark_h);
                 let copy_sub_img: DynamicImage = sub_img.to_image().into();
 
                 for x in 0..watermark_w {
@@ -125,11 +144,10 @@ impl WatermarkTask {
                 self.old_section = Some(copy_sub_img);
 
                 Ok(())
-            } else {
-                Err(anyhow!("Watermark is not set"))
+            },
+            _ => {
+                Err(anyhow!("Watermark or target image is not set"))
             }
-        } else {
-            Err(anyhow!("Target is not set"))
         }
     }
 }
