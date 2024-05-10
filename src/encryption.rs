@@ -2,6 +2,11 @@ use aes::cipher::typenum::{U16, U32};
 use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit};
 use aes::Aes256;
 
+pub const BASIC_KEY: [u8; 32] = [
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24,
+];
+
 fn get_size_to_vec(size: usize) -> [u8; 4] {
     let first_byte = ((size & 0xFF000000) >> 24) as u8;
     let second_byte = ((size & 0xFF0000) >> 16) as u8;
@@ -21,7 +26,7 @@ fn get_size_from_vec(size: &[u8]) -> usize {
     real_size
 }
 
-fn get_vec_with_size(inp: &Vec<u8>) -> Vec<u8> {
+fn get_vec_with_size(inp: &[u8]) -> Vec<u8> {
     let inp_size = inp.len();
     let inp_size_vec = get_size_to_vec(inp_size);
     let mut initial_vec = Vec::from(inp_size_vec);
@@ -76,8 +81,7 @@ fn get_vec_without_size(inp: &Vec<u8>) -> Option<Vec<u8>> {
     Some(result)
 }
 
-
-pub fn encrypt(inp: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+pub fn encrypt(inp: &[u8], key: &[u8]) -> Vec<u8> {
     let copy_inp = get_vec_with_size(&inp);
     let iter = copy_inp.chunks(16);
     let key_block = transform_key(key);
@@ -208,15 +212,19 @@ mod tests {
 
     #[test]
     fn test_encrypt_decrypt() {
-        let key = vec![0xFFu8, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-            0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88,
-            0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22];
+        let key = vec![
+            0xFFu8, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+            0xAA, 0xAA, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x22, 0x22, 0x22, 0x22,
+            0x22, 0x22, 0x22, 0x22,
+        ];
 
         let data = vec![0xFFu8, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
         let encrypted_data = encrypt(&data, &key);
 
-        assert_eq!(encrypted_data, [60, 117, 229, 150, 183, 30, 8, 81, 211, 255, 72, 245, 84, 68, 252, 102]);
+        assert_eq!(
+            encrypted_data,
+            [60, 117, 229, 150, 183, 30, 8, 81, 211, 255, 72, 245, 84, 68, 252, 102]
+        );
 
         let decrypted_data = decrypt(&encrypted_data, &key);
 
