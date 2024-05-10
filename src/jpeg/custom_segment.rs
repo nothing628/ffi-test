@@ -61,14 +61,14 @@ pub fn join_bytes(data: &Vec<CustomSegment>) -> Vec<u8> {
     result
 }
 
-impl From<CustomSegment> for JFIFSegment {
-    fn from(value: CustomSegment) -> Self {
+impl From<&CustomSegment> for JFIFSegment {
+    fn from(value: &CustomSegment) -> Self {
         let mut data = Vec::from(CUSTOM_SEGMENT_NAME.as_bytes());
         let order = value.order.to_be_bytes();
         
         data.push(0x00);
         data.extend(order);
-        data.extend(value.data);
+        data.extend(&value.data);
 
         let segment = GeneralSegment::new(data);
 
@@ -123,7 +123,7 @@ mod tests {
             data: vec![0xFF, 0xBA, 0x28],
             order: 0,
         };
-        let app_segment = JFIFSegment::from(segment);
+        let app_segment = JFIFSegment::from(&segment);
 
         match app_segment {
             JFIFSegment::APP(app,data ) => {

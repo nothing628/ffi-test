@@ -1,3 +1,5 @@
+use crate::jpeg::container::{JFIFContainer, JFIFSegment};
+use crate::jpeg::custom_segment::{split_bytes, CustomSegment};
 use crate::webp_container::{Chunk, RIFFContainer, RegularChunk};
 use thiserror::Error;
 
@@ -5,6 +7,12 @@ use thiserror::Error;
 pub enum JoinError {
     #[error("Invalid WebP file")]
     InvalidWebpFile,
+
+    #[error("Invalid Jpeg container")]
+    InvalidJpegFile,
+
+    #[error("Cannot bind to jpeg file")]
+    CannotInsertCustomSegment,
 }
 
 pub fn le_to_u32(inp: &[u8]) -> u32 {
@@ -113,6 +121,34 @@ pub fn join_webp(inp: &[u8], target: &[u8]) -> Result<Vec<u8>, JoinError> {
     Ok(inp_container.to_bytes())
 }
 
+pub fn join_jpeg(inp: &[u8], target: &[u8]) -> Result<Vec<u8>, JoinError> {
+    let inp_vec = Vec::from(inp);
+    let inp_container = JFIFContainer::try_from(&inp_vec);
+    let custom_segments: Vec<CustomSegment> = split_bytes(target);
+
+    if let Err(_) = inp_container {
+        return Err(JoinError::InvalidJpegFile);
+    }
+
+    let mut inp_container = inp_container.unwrap();
+    let app_segment: Vec<JFIFSegment> = custom_segments
+        .iter()
+        .map(|f| {
+            return JFIFSegment::from(f);
+        })
+        .collect();
+
+    for f in app_segment {
+        let result = inp_container.put_custom_segment(f);
+
+        if result == None {
+            return Err(JoinError::CannotInsertCustomSegment);
+        }
+    }
+
+    Ok(inp_container.into())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -147,7 +183,7 @@ mod tests {
 
         assert_eq!(output, [0x28u8, 0x7A, 0x44, 0x00]);
 
-            let inp = 0x9A447A00;
+        let inp = 0x9A447A00;
         let output = usize_to_le(inp);
 
         assert_eq!(output, [0x00u8, 0x7A, 0x44, 0x9A]);

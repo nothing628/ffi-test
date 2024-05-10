@@ -8,9 +8,7 @@ pub struct GeneralSegment {
 
 impl GeneralSegment {
     pub fn new(data: Vec<u8>) -> Self {
-        Self {
-            data,
-        }
+        Self { data }
     }
 
     pub fn get_data(&self) -> &Vec<u8> {
@@ -40,13 +38,27 @@ pub struct JFIFContainer {
 
 impl JFIFContainer {
     pub fn new(segments: Vec<JFIFSegment>) -> Self {
-        Self {
-            segments
-        }
+        Self { segments }
     }
 
     pub fn get_segments(&self) -> &Vec<JFIFSegment> {
         &self.segments
+    }
+
+    pub fn put_custom_segment(&mut self, segment: JFIFSegment) -> Option<usize> {
+        let latest_app = self.segments.iter().rposition(|p| {
+            return match *p {
+                JFIFSegment::APP(_, _) => true,
+                _ => false,
+            };
+        });
+
+        if let Some(latest_app) = latest_app {
+            self.segments.insert(latest_app + 1, segment);
+            return Some(latest_app + 1);
+        }
+
+        None
     }
 }
 
