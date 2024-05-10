@@ -1,7 +1,7 @@
 use anyhow::Result;
-use ffi_test::jpeg::container::JFIFContainer;
-use ffi_test::jpeg::container::JFIFSegment;
-use ffi_test::jpeg::container::ToBytes;
+use drmcore::jpeg::container::JFIFContainer;
+use drmcore::jpeg::container::JFIFSegment;
+use drmcore::jpeg::container::ToBytes;
 use std::fs::{read, write as writefs};
 
 pub fn main() -> Result<()> {

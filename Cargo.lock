@@ -294,6 +294,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "drmcore"
+version = "0.1.0"
+dependencies = [
+ "aes",
+ "anyhow",
+ "image",
+ "thiserror",
+]
+
+[[package]]
+name = "drmlib"
+version = "0.1.0"
+dependencies = [
+ "cbindgen",
+ "drmcore",
+ "image",
+]
+
+[[package]]
+name = "drmwasm"
+version = "0.1.0"
+
+[[package]]
 name = "either"
 version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -344,17 +367,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4f9bfee30e4dedf0ab8b422f03af778d9612b63f502710fc500a334ebe2de645"
 dependencies = [
  "simd-adler32",
-]
-
-[[package]]
-name = "ffi-test"
-version = "0.1.0"
-dependencies = [
- "aes",
- "anyhow",
- "cbindgen",
- "image",
- "thiserror",
 ]
 
 [[package]]

@@ -1,0 +1,15 @@
+[package]
+name = "drmlib"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+cbindgen = "0.24.0"
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+image = { version = "0.25.1", features = ["jpeg", "webp"] }
+drmcore = { version = "0.1.0", path = "../drmcore" }

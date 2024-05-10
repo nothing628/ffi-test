@@ -1,0 +1,13 @@
+[package]
+name = "drmcore"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aes = "0.8.3"
+anyhow = "1.0.82"
+image = { version = "0.25.1", features = ["jpeg", "webp"] }
+thiserror = "1.0.59"
+
+[[bin]]
+name = "test_jpeg"
