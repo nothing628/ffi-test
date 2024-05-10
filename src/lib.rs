@@ -3,6 +3,7 @@ mod watermark_task;
 mod img;
 mod file_joiner;
 pub mod jpeg;
+mod encryption;
 mod webp_container;
 
 use std::mem::{forget, transmute};
