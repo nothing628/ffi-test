@@ -7,7 +7,9 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wasm-bindgen = "0.2.84"
+serde = { version = "1.0.203", features = ["serde_derive", "std"] }
+serde-wasm-bindgen = "0.6.5"
+wasm-bindgen = { version = "0.2.84", features = ["spans", "std", "serde-serialize", "serde", "serde_json"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.34"
