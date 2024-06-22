@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+import { onMounted } from "vue";
+import HelloWorld from "./components/HelloWorld.vue";
+import { add } from "drmwasm";
+
+onMounted(() => {
+  console.log(add);
+  console.log(add(20));
+})
 </script>
 
 <template>

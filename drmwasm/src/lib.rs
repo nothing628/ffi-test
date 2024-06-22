@@ -10,8 +10,8 @@ pub fn add(x: u32) -> u32 {
 
 #[wasm_bindgen]
 pub struct ReplacementImage {
-    x: u32,
-    y: u32,
+    pub x: u32,
+    pub y: u32,
     real_img: Vec<u8>,
 }
 
