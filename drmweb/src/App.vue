@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import HelloWorld from "./components/HelloWorld.vue";
-import { add } from "drmwasm";
+import { add, get_replacement_img } from "drmwasm";
 
 onMounted(() => {
   console.log(add);
   console.log(add(20));
+  console.log(get_replacement_img([9, 2, 9]));
 })
 </script>
 
@@ -18,7 +19,6 @@ onMounted(() => {
       <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
     </a>
   </div>
-  <HelloWorld msg="Vite + Vue" />
 </template>
 
 <style scoped>

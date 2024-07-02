@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       drmwasm:
-        specifier: file://../drmwasm/pkg
+        specifier: file:../drmwasm/pkg
         version: file:../drmwasm/pkg
       vite-plugin-wasm:
         specifier: ^3.3.0

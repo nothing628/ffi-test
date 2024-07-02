@@ -16,10 +16,6 @@ pub struct ReplacementImage {
 }
 
 #[wasm_bindgen]
-pub fn get_replacement_img(inp_bytes: Vec<u8>) -> ReplacementImage {
-    ReplacementImage {
-        x: 12,
-        y: 32,
-        real_img: Vec::new(),
-    }
+pub fn get_replacement_img(inp_bytes: Vec<u8>) -> Vec<u8> {
+    Vec::from([1,2,4])
 }

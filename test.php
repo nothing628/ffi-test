@@ -4,7 +4,7 @@ include "./vendor/autoload.php";
 
 use FFI\Scalar\Type;
 
-$ffi = FFI::cdef(file_get_contents("./bindings.h"), "target/release/libffi_test.so");
+$ffi = FFI::cdef(file_get_contents("./bindings.h"), "target/release/libdrmlib.so");
 // $result = $ffi->add(12);
 
 // var_dump($result);
@@ -71,32 +71,47 @@ function cropJpeg(\FFI $ffi)
     FFI::free($inp_arr);
 }
 
-function storeToFile($tmp, $filename) {
+function storeToFile($tmp, $filename)
+{
     $fileOut = implode(array_map("chr", $tmp));
     file_put_contents($filename, $fileOut);
 }
 
-function testWatermark(\FFI $ffi)
+function testWatermark(\FFI $ffi, $input_file, $watermark_file, $output_file)
 {
-    $targetContent = file_get_contents("./test.webp");
+    $input_ext = pathinfo($input_file)["extension"];
+
+    $targetContent = file_get_contents($input_file);
     $targetBytes = unpack("C*", $targetContent);
     $targetArr = Type::uint8Array($targetBytes, false);
     $targetLen = count($targetBytes);
-    $watermarkContent = file_get_contents("./watermark.webp");
+    $watermarkContent = file_get_contents($watermark_file);
     $watermarkBytes = unpack("C*", $watermarkContent);
     $watermarkArr = Type::uint8Array($watermarkBytes, false);
     $watermarkLen = count($watermarkBytes);
+
 
     $watermarkTask = $ffi->create_watermarktask();
     $arrResult = $ffi->create_arr_result();
 
     $ffi->set_position_watermark($watermarkTask, 40, 40, 1, 1);
-    $ffi->set_target_webp($watermarkTask, $targetArr, $targetLen);
+
+    if ($input_ext == "webp")
+        $ffi->set_target_webp($watermarkTask, $targetArr, $targetLen);
+    else
+        $ffi->set_target_jpeg($watermarkTask, $targetArr, $targetLen);
+
     $ffi->set_watermark_webp($watermarkTask, $watermarkArr, $watermarkLen);
     $processResult = $ffi->process_watermark($watermarkTask);
 
     if ($processResult == 0) {
-        $copyResult = $ffi->get_output_webp($watermarkTask, $arrResult);
+        $copyResult = 1;
+
+        if ($input_ext) {
+            $copyResult = $ffi->get_output_webp($watermarkTask, $arrResult);
+        } else {
+            $copyResult = $ffi->get_output_jpeg($watermarkTask, $arrResult);
+        }
 
         if ($copyResult == 0) {
             $resultLen = $ffi->len_arr_result($arrResult);
@@ -106,8 +121,8 @@ function testWatermark(\FFI $ffi)
             for ($i = 0; $i < $resultLen; $i++) {
                 $tmp[] = $resultArr[$i];
             }
-            
-            storeToFile($tmp, "crop.webp");
+
+            storeToFile($tmp, $output_file);
         }
     }
 
@@ -117,4 +132,5 @@ function testWatermark(\FFI $ffi)
 
 // cropWebp($ffi);
 // cropJpeg($ffi);
-testWatermark($ffi);
+testWatermark($ffi, "./test.webp", "./watermark.webp", "crop.webp");
+testWatermark($ffi, "./test.jpeg", "./watermark.webp", "crop.jpeg");

@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "drmwasm": "file://../drmwasm/pkg",
+    "drmwasm": "file:../drmwasm/pkg",
     "vite-plugin-wasm": "^3.3.0",
     "vue": "^3.4.29"
   },
