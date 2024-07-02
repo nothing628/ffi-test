@@ -30,11 +30,13 @@ pub struct WatermarkTask {
     y: u32,
 }
 
+#[derive(Debug)]
 pub struct Point {
     x: u32,
     y: u32,
 }
 
+#[derive(Debug)]
 pub struct Dimension {
     width: u32,
     height: u32,
@@ -248,10 +250,7 @@ impl TryFrom<&[u8]> for Dimension {
                 let width = le_to_u32(w);
                 let height = le_to_u32(h);
 
-                return Ok(Dimension {
-                    height,
-                    width,
-                });
+                return Ok(Dimension { height, width });
             }
             _ => Err(ConversionError::ConversionError),
         };
@@ -270,10 +269,7 @@ impl TryFrom<&[u8]> for Point {
                 let x_pos = le_to_u32(x);
                 let y_pos = le_to_u32(y);
 
-                return Ok(Point {
-                    x: x_pos,
-                    y: y_pos,
-                });
+                return Ok(Point { x: x_pos, y: y_pos });
             }
             _ => Err(ConversionError::ConversionError),
         };
@@ -286,15 +282,38 @@ mod tests {
 
     #[test]
     fn test_jpeg_watermark_task() {
-        let img = image::open("../test.jpeg").unwrap();
+        let mut watermark_task = WatermarkTask::new();
+        let watermark = image::open("../watermark.webp").unwrap();
+        let img = image::open("../test.webp").unwrap();
 
-        // The dimensions method returns the images width and height.
-        println!("dimensions {:?}", img.dimensions());
+        watermark_task.set_target(Some(img));
+        watermark_task.set_watermark(Some(watermark));
+        watermark_task.set_position(40, 40, OriginX::Right, OriginY::Bottom);
+        let process_result = watermark_task.process();
 
-        // The color method returns the image's `ColorType`.
-        println!("{:?}", img.color());
+        match process_result {
+            Ok(_) => {}
+            Err(err) => {
+                println!("{:?}", err);
+            }
+        }
 
-        // Write the contents of this image to the Writer in PNG format.
-        img.save("../testx.jpeg").unwrap();
+        let watermark_pos: [u8; 8] = watermark_task
+            .get_absolute_watermark_position()
+            .unwrap()
+            .into();
+        let watermark_dim: [u8; 8] = watermark_task.get_watermark_dimension().unwrap().into();
+
+        println!("position {:?}", watermark_pos);
+        println!("dimension {:?}", watermark_dim);
+
+        // // The dimensions method returns the images width and height.
+        // println!("dimensions {:?}", img.dimensions());
+
+        // // The color method returns the image's `ColorType`.
+        // println!("{:?}", img.color());
+
+        // // Write the contents of this image to the Writer in PNG format.
+        // img.save("../testx.jpeg").unwrap();
     }
 }

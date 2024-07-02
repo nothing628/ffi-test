@@ -104,7 +104,7 @@ pub fn encrypt(inp: &[u8], key: &[u8]) -> Vec<u8> {
     result
 }
 
-pub fn decrypt(inp: &Vec<u8>, key: &Vec<u8>) -> Option<Vec<u8>> {
+pub fn decrypt(inp: &[u8], key: &[u8]) -> Option<Vec<u8>> {
     let iter = inp.chunks(16);
     let key_block = transform_key(key);
     let mut blocks: Vec<GenericArray<u8, U16>> = Vec::new();
