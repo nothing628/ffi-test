@@ -74,6 +74,11 @@ function cropJpeg(\FFI $ffi)
 function storeToFile($tmp, $filename)
 {
     $fileOut = implode(array_map("chr", $tmp));
+
+    if (file_exists($filename)) {
+        unlink($filename);
+    }
+
     file_put_contents($filename, $fileOut);
 }
 
@@ -90,7 +95,6 @@ function testWatermark(\FFI $ffi, $input_file, $watermark_file, $output_file)
     $watermarkArr = Type::uint8Array($watermarkBytes, false);
     $watermarkLen = count($watermarkBytes);
 
-
     $watermarkTask = $ffi->create_watermarktask();
     $arrResult = $ffi->create_arr_result();
 
@@ -105,9 +109,9 @@ function testWatermark(\FFI $ffi, $input_file, $watermark_file, $output_file)
     $processResult = $ffi->process_watermark($watermarkTask);
 
     if ($processResult == 0) {
-        $copyResult = 1;
+        $copyResult = 0xF;
 
-        if ($input_ext) {
+        if ($input_ext == "webp") {
             $copyResult = $ffi->get_output_webp($watermarkTask, $arrResult);
         } else {
             $copyResult = $ffi->get_output_jpeg($watermarkTask, $arrResult);

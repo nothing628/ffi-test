@@ -11,5 +11,5 @@ path = "src/lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-image = { version = "0.25.1", features = ["jpeg", "webp"] }
+image = { version = "0.24.9", features = ["jpeg", "webp"] }
 drmcore = { version = "0.1.0", path = "../drmcore" }

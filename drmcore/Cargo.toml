@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 aes = "0.8.3"
 anyhow = "1.0.82"
-image = { version = "0.25.1", features = ["jpeg", "webp"] }
+image = { version = "0.24.9", features = ["jpeg", "webp"] }
 thiserror = "1.0.59"
 
 [[bin]]

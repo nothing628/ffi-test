@@ -1,9 +1,9 @@
+use crate::file_joiner::usize_to_le;
 use anyhow::{anyhow, Result};
 use image::{
     load_from_memory_with_format, DynamicImage, GenericImage, GenericImageView, ImageFormat,
     ImageResult, Pixel,
 };
-use crate::file_joiner::usize_to_le;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum OriginX {
@@ -41,10 +41,7 @@ pub struct Dimension {
 
 impl Dimension {
     pub fn new(width: u32, height: u32) -> Self {
-        Self {
-            width,
-            height,
-        }
+        Self { width, height }
     }
 }
 
@@ -92,7 +89,7 @@ impl WatermarkTask {
 
                 Some(Dimension::new(watermark_w, watermark_h))
             }
-            _ => None
+            _ => None,
         }
     }
 
@@ -103,14 +100,17 @@ impl WatermarkTask {
 
                 Some(Dimension::new(width, height))
             }
-            _ => None
+            _ => None,
         }
     }
 
     pub fn get_absolute_watermark_position(&self) -> Option<Point> {
         let offset_x = self.x;
         let offset_y = self.y;
-        let offset = Point { x: offset_x, y: offset_y };
+        let offset = Point {
+            x: offset_x,
+            y: offset_y,
+        };
         let origin_x = &self.origin_x;
         let origin_y = &self.origin_y;
         let watermark_dim = self.get_watermark_dimension();
@@ -118,7 +118,13 @@ impl WatermarkTask {
 
         match (target_dim, watermark_dim) {
             (Some(target_dim), Some(watermark_dim)) => {
-                let pos = solve_absolute_position(&target_dim, &watermark_dim, origin_x, origin_y, &offset);
+                let pos = solve_absolute_position(
+                    &target_dim,
+                    &watermark_dim,
+                    origin_x,
+                    origin_y,
+                    &offset,
+                );
 
                 return Some(pos);
             }
@@ -155,12 +161,13 @@ impl WatermarkTask {
         let target = &self.target;
         let watermark = &self.watermark;
 
-        match (target,watermark) {
+        match (target, watermark) {
             (Some(target_img), Some(watermark_img)) => {
                 let (watermark_w, watermark_h) = watermark_img.dimensions();
                 let position = self.get_absolute_watermark_position().unwrap();
                 let mut clone_target = target_img.clone();
-                let mut sub_img = clone_target.sub_image(position.x, position.y, watermark_w, watermark_h);
+                let mut sub_img =
+                    clone_target.sub_image(position.x, position.y, watermark_w, watermark_h);
                 let copy_sub_img: DynamicImage = sub_img.to_image().into();
 
                 for x in 0..watermark_w {
@@ -176,10 +183,8 @@ impl WatermarkTask {
                 self.old_section = Some(copy_sub_img);
 
                 Ok(())
-            },
-            _ => {
-                Err(anyhow!("Watermark or target image is not set"))
             }
+            _ => Err(anyhow!("Watermark or target image is not set")),
         }
     }
 }
@@ -206,24 +211,39 @@ pub fn set_target(
     Ok(())
 }
 
-impl From<Point> for [u8;8] {
+impl From<Point> for [u8; 8] {
     fn from(value: Point) -> Self {
         let x = usize_to_le(value.x as usize);
         let y = usize_to_le(value.y as usize);
-        
-        [
-            x[0], x[1], x[2], x[3], y[0], y[1], y[2], y[3]
-        ]
+
+        [x[0], x[1], x[2], x[3], y[0], y[1], y[2], y[3]]
     }
 }
 
-impl From<Dimension> for [u8;8] {
+impl From<Dimension> for [u8; 8] {
     fn from(value: Dimension) -> Self {
         let w = usize_to_le(value.width as usize);
         let h = usize_to_le(value.height as usize);
 
-        [
-            w[0], w[1], w[2], w[3], h[0], h[1], h[2], h[3]
-        ]
+        [w[0], w[1], w[2], w[3], h[0], h[1], h[2], h[3]]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_jpeg_watermark_task() {
+        let img = image::open("../test.jpeg").unwrap();
+
+        // The dimensions method returns the images width and height.
+        println!("dimensions {:?}", img.dimensions());
+
+        // The color method returns the image's `ColorType`.
+        println!("{:?}", img.color());
+
+        // Write the contents of this image to the Writer in PNG format.
+        img.save("../testx.jpeg").unwrap();
     }
 }
