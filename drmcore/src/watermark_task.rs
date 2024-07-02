@@ -1,9 +1,10 @@
-use crate::file_joiner::usize_to_le;
+use crate::file_joiner::{le_to_u32, le_to_usize, usize_to_le};
 use anyhow::{anyhow, Result};
 use image::{
     load_from_memory_with_format, DynamicImage, GenericImage, GenericImageView, ImageFormat,
     ImageResult, Pixel,
 };
+use thiserror::Error;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum OriginX {
@@ -37,6 +38,12 @@ pub struct Point {
 pub struct Dimension {
     width: u32,
     height: u32,
+}
+
+#[derive(Error, Debug)]
+pub enum ConversionError {
+    #[error("Invalid type")]
+    ConversionError,
 }
 
 impl Dimension {
@@ -226,6 +233,50 @@ impl From<Dimension> for [u8; 8] {
         let h = usize_to_le(value.height as usize);
 
         [w[0], w[1], w[2], w[3], h[0], h[1], h[2], h[3]]
+    }
+}
+
+impl TryFrom<&[u8]> for Dimension {
+    type Error = ConversionError;
+
+    fn try_from(value: &[u8]) -> std::result::Result<Self, Self::Error> {
+        let w = value.get(0..4);
+        let h = value.get(4..8);
+
+        return match (w, h) {
+            (Some(w), Some(h)) => {
+                let width = le_to_u32(w);
+                let height = le_to_u32(h);
+
+                return Ok(Dimension {
+                    height,
+                    width,
+                });
+            }
+            _ => Err(ConversionError::ConversionError),
+        };
+    }
+}
+
+impl TryFrom<&[u8]> for Point {
+    type Error = ConversionError;
+
+    fn try_from(value: &[u8]) -> std::result::Result<Self, Self::Error> {
+        let x = value.get(0..4);
+        let y = value.get(4..8);
+
+        return match (x, y) {
+            (Some(x), Some(y)) => {
+                let x_pos = le_to_u32(x);
+                let y_pos = le_to_u32(y);
+
+                return Ok(Point {
+                    x: x_pos,
+                    y: y_pos,
+                });
+            }
+            _ => Err(ConversionError::ConversionError),
+        };
     }
 }
 

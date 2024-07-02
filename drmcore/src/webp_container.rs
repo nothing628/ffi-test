@@ -89,6 +89,19 @@ impl RIFFContainer {
     pub fn push_subchunk(&mut self, chunk: Box<dyn Chunk>) {
         self.subchunks.push(chunk);
     }
+
+    pub fn find_subchunk(&mut self, chunk_id: &str) -> Option<&Box<dyn Chunk>> {
+        let output = self.subchunks.iter().find(|p| {
+            let x = *p;
+            x.get_chunk_id() == chunk_id
+        });
+
+        if let Some(chunk) = output {
+            return Some(chunk);
+        }
+
+        None
+    }
 }
 
 impl RiffChunk for RIFFContainer {
