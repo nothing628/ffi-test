@@ -1,6 +1,7 @@
 pub mod watermark_task;
 pub mod img;
 pub mod file_joiner;
+pub mod file_splitter;
 pub mod jpeg;
-mod encryption;
-mod webp_container;
+pub mod encryption;
+pub mod webp_container;

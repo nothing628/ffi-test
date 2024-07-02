@@ -235,6 +235,7 @@ dependencies = [
 name = "drmwasm"
 version = "0.1.0"
 dependencies = [
+ "drmcore",
  "serde",
  "serde-wasm-bindgen",
  "wasm-bindgen",
