@@ -32,14 +32,14 @@ pub struct WatermarkTask {
 
 #[derive(Debug)]
 pub struct Point {
-    x: u32,
-    y: u32,
+    pub x: u32,
+    pub y: u32,
 }
 
 #[derive(Debug)]
 pub struct Dimension {
-    width: u32,
-    height: u32,
+    pub width: u32,
+    pub height: u32,
 }
 
 #[derive(Error, Debug)]
