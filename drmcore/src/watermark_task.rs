@@ -1,4 +1,4 @@
-use crate::file_joiner::{le_to_u32, le_to_usize, usize_to_le};
+use crate::file_joiner::{le_to_u32, usize_to_le};
 use anyhow::{anyhow, Result};
 use image::{
     load_from_memory_with_format, DynamicImage, GenericImage, GenericImageView, ImageFormat,

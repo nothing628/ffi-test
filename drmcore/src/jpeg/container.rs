@@ -1,7 +1,7 @@
 use crate::file_joiner::usize_to_be;
 use core::convert::From;
 
-use super::custom_segment::{CustomSegment, CUSTOM_SEGMENT_APP};
+use super::custom_segment::CustomSegment;
 
 #[derive(Debug)]
 pub struct GeneralSegment {
