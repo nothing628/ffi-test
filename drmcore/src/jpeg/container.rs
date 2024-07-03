@@ -1,6 +1,8 @@
 use crate::file_joiner::usize_to_be;
 use core::convert::From;
 
+use super::custom_segment::{CustomSegment, CUSTOM_SEGMENT_APP};
+
 #[derive(Debug)]
 pub struct GeneralSegment {
     data: Vec<u8>,
@@ -43,6 +45,32 @@ impl JFIFContainer {
 
     pub fn get_segments(&self) -> &Vec<JFIFSegment> {
         &self.segments
+    }
+
+    pub fn get_custom_segment(&self) -> Vec<CustomSegment> {
+        let mut custom_segments: Vec<CustomSegment> = Vec::new();
+        let _ = &self
+            .segments
+            .iter()
+            .filter(|p| {
+                let segment = *p;
+
+                return match segment {
+                    JFIFSegment::APP(_, _) => {
+                        let custom_segment_result = CustomSegment::try_from(segment);
+
+                        return match custom_segment_result {
+                            Ok(_) => true,
+                            Err(_) => false,
+                        };
+                    }
+                    _ => false,
+                };
+            })
+            .map(|p| -> CustomSegment { CustomSegment::try_from(p).unwrap() })
+            .for_each(|f| custom_segments.push(f));
+
+        custom_segments
     }
 
     pub fn put_custom_segment(&mut self, segment: JFIFSegment) -> Option<usize> {

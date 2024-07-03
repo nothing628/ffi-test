@@ -1,4 +1,5 @@
 use crate::encryption::{decrypt, BASIC_KEY};
+use crate::jpeg::container::JFIFContainer;
 use crate::watermark_task::{Dimension, Point};
 use crate::webp_container::{Chunk, RIFFContainer, RegularChunk};
 use thiserror::Error;
@@ -62,6 +63,9 @@ pub fn split_webp(inp_vec: &Vec<u8>) -> Result<SplitResult, SplitError> {
 }
 
 pub fn split_jpeg(inp_vec: &Vec<u8>) -> Result<SplitResult, SplitError> {
+    let inp_container = JFIFContainer::try_from(inp_vec).map_err(|_| SplitError::InvalidJpegFile)?;
+    let custom_segments = inp_container.get_custom_segment();
+    
     Err(SplitError::CannotFindCustomBlock)
 }
 
@@ -78,6 +82,23 @@ mod tests {
         match split_result {
             Ok(split_data) => {
                 fs::write("../somthing.webp", split_data.old_section_img).unwrap();
+                println!("position  : {:?}", split_data.position);
+                println!("dimension : {:?}", split_data.dimension);
+            }
+            Err(err) => {
+                //
+            }
+        }
+    }
+
+    #[test]
+    fn test_split_jpeg() {
+        let content = fs::read("../crop.jpeg").unwrap();
+        let split_result = split_jpeg(&content);
+
+        match split_result {
+            Ok(split_data) => {
+                fs::write("../somthing.jpeg", split_data.old_section_img).unwrap();
                 println!("position  : {:?}", split_data.position);
                 println!("dimension : {:?}", split_data.dimension);
             }
