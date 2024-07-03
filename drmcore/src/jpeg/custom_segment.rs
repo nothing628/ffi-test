@@ -10,7 +10,7 @@ pub const CUSTOM_SEGMENT_MAX_SIZE: u16 = 0xFFFF - 0x23; // 65500 bytes
 #[derive(Debug, PartialEq)]
 pub struct CustomSegment {
     data: Vec<u8>,
-    order: u16,
+    pub order: u16,
 }
 
 #[derive(Error, Debug, PartialEq)]

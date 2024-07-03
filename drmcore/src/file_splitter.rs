@@ -1,7 +1,8 @@
 use crate::encryption::{decrypt, BASIC_KEY};
 use crate::jpeg::container::JFIFContainer;
+use crate::jpeg::custom_segment::join_bytes;
 use crate::watermark_task::{Dimension, Point};
-use crate::webp_container::{Chunk, RIFFContainer, RegularChunk};
+use crate::webp_container::RIFFContainer;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -63,9 +64,41 @@ pub fn split_webp(inp_vec: &Vec<u8>) -> Result<SplitResult, SplitError> {
 }
 
 pub fn split_jpeg(inp_vec: &Vec<u8>) -> Result<SplitResult, SplitError> {
-    let inp_container = JFIFContainer::try_from(inp_vec).map_err(|_| SplitError::InvalidJpegFile)?;
-    let custom_segments = inp_container.get_custom_segment();
-    
+    let inp_container =
+        JFIFContainer::try_from(inp_vec).map_err(|_| SplitError::InvalidJpegFile)?;
+    let mut custom_segments = inp_container.get_custom_segment();
+    custom_segments.sort_by(|a, b| a.order.cmp(&b.order));
+    let subchunk = join_bytes(&custom_segments);
+    let subchunk_len = subchunk.len();
+
+    if subchunk_len > 0 {
+        let chunk_decrypted = decrypt(&subchunk, &BASIC_KEY).unwrap();
+        let chunk_len = chunk_decrypted.len();
+        let original_img = chunk_decrypted.get(0..chunk_len - 16);
+        let watermark_pos = chunk_decrypted.get(chunk_len - 16..chunk_len - 8);
+        let watermark_dim = chunk_decrypted.get(chunk_len - 8..chunk_len);
+
+        match (original_img, watermark_pos, watermark_dim) {
+            (Some(img_arr), Some(pos_arr), Some(dim_arr)) => {
+                let position = Point::try_from(pos_arr)
+                    .map_err(|_| -> SplitError { SplitError::CorruptedCustomBlock })?;
+                let dimension = Dimension::try_from(dim_arr)
+                    .map_err(|_| -> SplitError { SplitError::CorruptedCustomBlock })?;
+
+                let split_result = SplitResult {
+                    dimension,
+                    position,
+                    old_section_img: Vec::from(img_arr),
+                };
+
+                return Ok(split_result);
+            }
+            _ => {}
+        }
+
+        return Err(SplitError::CorruptedCustomBlock);
+    }
+
     Err(SplitError::CannotFindCustomBlock)
 }
 
