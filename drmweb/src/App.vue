@@ -2,13 +2,13 @@
 import { onMounted, ref } from "vue";
 import { add, get_replacement_jpeg, get_replacement_webp } from "drmwasm";
 
-const image = ref();
-const replace_img = ref();
+const canvas = ref();
 const file_meta = ref("");
 const watermark_x = ref(-1);
 const watermark_y = ref(-1);
 const watermark_w = ref(-1);
 const watermark_h = ref(-1);
+const original_img = ref<Blob | null>(null);
 const replacement_img = ref<Blob | null>(null);
 
 const readFile = async (file: File) => {
@@ -29,42 +29,56 @@ const readFile = async (file: File) => {
   return promise;
 };
 
-const drawImage = (file_content: Uint8Array, metadata: string) => {
-  if (image.value) {
-    const image_elem = image.value as HTMLImageElement;
-    const file_blob = new Blob([file_content], { type: metadata });
-    const file_url = URL.createObjectURL(file_blob);
+const renderCanvas = async () => {
+  if (!original_img.value) return;
+  if (!canvas.value) return;
 
-    image_elem.src = file_url;
-  }
-};
+  const canvas_elem = canvas.value as HTMLCanvasElement;
+  const canvas_context = canvas_elem.getContext("2d");
+  const file_blob = original_img.value;
+  const file_bitmap = await createImageBitmap(file_blob);
 
-const drawReplaceImg = (file_content: Uint8Array, metadata: string) => {
-  if (replace_img.value) {
-    const image_elem = replace_img.value as HTMLImageElement;
-    const file_blob = new Blob([file_content], {
-      type: metadata,
-    });
-    // const file_url = URL.createObjectURL(file_blob);
-    const file_reader = new FileReader();
-    file_reader.onload = () => {
-      image_elem.src = file_reader.result as string;
+  if (canvas_context) {
+    canvas_context.drawImage(
+      file_bitmap,
+      0,
+      0,
+      file_bitmap.width,
+      file_bitmap.height,
+      0,
+      0,
+      600,
+      800
+    );
+
+    const image_scale_w = file_bitmap.width / 600;
+    const image_scale_h = file_bitmap.height / 800;
+
+    if (replacement_img.value) {
+      const replacement_blob = replacement_img.value;
+      const replacement_bitmap = await createImageBitmap(replacement_blob);
+      const replacement_width = watermark_w.value / image_scale_w;
+      const replacement_height = watermark_h.value / image_scale_h;
+      const replacement_x = watermark_x.value / image_scale_w;
+      const replacement_y = watermark_y.value / image_scale_h;
+
+      console.log(image_scale_w, image_scale_h, replacement_x);
+
+      canvas_context.drawImage(replacement_bitmap, replacement_x, replacement_y, replacement_width, replacement_height)
     }
-    file_reader.readAsDataURL(file_blob);
   }
 };
 
 const storeReplacementImage = (subimage_replacement: any, metadata: string) => {
   const subimage = subimage_replacement.real_img;
   const subimage_arr = new Uint8Array(subimage);
+  const subimage_blob = new Blob([subimage_arr], { type: metadata });
 
-  watermark_h.value = subimage_replacement.width;
-  watermark_w.value = subimage_replacement.height;
+  watermark_h.value = subimage_replacement.height;
+  watermark_w.value = subimage_replacement.width;
   watermark_x.value = subimage_replacement.x;
   watermark_y.value = subimage_replacement.y;
-  // replacement_img.value = subimage_blob;
-
-  drawReplaceImg(subimage_arr, metadata);
+  replacement_img.value = subimage_blob;
 };
 
 const clearReplacementImage = () => {
@@ -86,8 +100,10 @@ const handleFile = async (event: Event) => {
       const metadata = first_file.type;
       const file_content = await readFile(first_file);
       const file_uint8 = new Uint8Array(file_content);
+      const file_blob = new Blob([file_content], { type: metadata });
 
       file_meta.value = metadata;
+      original_img.value = file_blob;
 
       try {
         if (metadata == "image/jpeg") {
@@ -102,7 +118,7 @@ const handleFile = async (event: Event) => {
         clearReplacementImage();
       }
 
-      drawImage(file_uint8, metadata);
+      await renderCanvas();
     }
   }
 };
@@ -116,19 +132,14 @@ onMounted(() => {
   <div>
     <div>
       <input type="file" accept="image/jpeg,image/webp" @change="handleFile" />
-      <img class="preview" ref="image" />
-      <img class="replace" ref="replace_img" />
+      <canvas width="600" height="800" class="preview" ref="canvas"></canvas>
     </div>
   </div>
 </template>
 
 <style scoped>
 .preview {
-  width: auto;
+  width: 600px;
   height: 800px;
-}
-.replace {
-  width: 200px;
-  height: auto;
 }
 </style>
