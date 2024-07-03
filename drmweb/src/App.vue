@@ -45,21 +45,26 @@ const drawReplaceImg = (file_content: Uint8Array, metadata: string) => {
     const file_blob = new Blob([file_content], {
       type: metadata,
     });
-    const file_url = URL.createObjectURL(file_blob);
-
-    image_elem.src = file_url;
+    // const file_url = URL.createObjectURL(file_blob);
+    const file_reader = new FileReader();
+    file_reader.onload = () => {
+      image_elem.src = file_reader.result as string;
+    }
+    file_reader.readAsDataURL(file_blob);
   }
 };
 
 const storeReplacementImage = (subimage_replacement: any, metadata: string) => {
   const subimage = subimage_replacement.real_img;
+  const subimage_arr = new Uint8Array(subimage);
 
   watermark_h.value = subimage_replacement.width;
   watermark_w.value = subimage_replacement.height;
   watermark_x.value = subimage_replacement.x;
   watermark_y.value = subimage_replacement.y;
   // replacement_img.value = subimage_blob;
-  drawReplaceImg(subimage, metadata);
+
+  drawReplaceImg(subimage_arr, metadata);
 };
 
 const clearReplacementImage = () => {
@@ -102,10 +107,6 @@ const handleFile = async (event: Event) => {
   }
 };
 
-const handleError = (err: any) => {
-  console.log(err);
-};
-
 onMounted(() => {
   console.log(add(20));
 });
@@ -116,7 +117,7 @@ onMounted(() => {
     <div>
       <input type="file" accept="image/jpeg,image/webp" @change="handleFile" />
       <img class="preview" ref="image" />
-      <img class="replace" ref="replace_img" @error="handleError" />
+      <img class="replace" ref="replace_img" />
     </div>
   </div>
 </template>
