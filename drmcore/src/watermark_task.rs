@@ -28,6 +28,7 @@ pub struct WatermarkTask {
     origin_y: OriginY,
     x: u32,
     y: u32,
+    key: Option<[u8; 32]>,
 }
 
 #[derive(Debug)]
@@ -88,7 +89,19 @@ impl WatermarkTask {
             watermark: None,
             output: None,
             old_section: None,
+            key: None,
         }
+    }
+
+    pub fn get_key(&self) -> Option<[u8;32]> {
+        self.key
+    }
+
+    pub fn set_key(&mut self, key: &[u8]) -> Result<()> {
+        let key_slice: [u8;32] = key.try_into()?;
+        self.key = Some(key_slice);
+
+        Ok(())
     }
 
     pub fn get_watermark_dimension(&self) -> Option<Dimension> {

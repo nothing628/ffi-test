@@ -1,7 +1,7 @@
+use crate::encryption::encrypt;
 use crate::jpeg::container::{JFIFContainer, JFIFSegment};
 use crate::jpeg::custom_segment::{split_bytes, CustomSegment};
 use crate::webp_container::{Chunk, RIFFContainer, RegularChunk};
-use crate::encryption::{encrypt, BASIC_KEY};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -140,9 +140,9 @@ pub fn usize_to_be(inp: usize) -> [u8; 4] {
     bytes
 }
 
-pub fn join_webp(inp: &[u8], target: &[u8]) -> Result<Vec<u8>, JoinError> {
+pub fn join_webp(inp: &[u8], target: &[u8], enc_key: &[u8; 32]) -> Result<Vec<u8>, JoinError> {
     let inp_vec = Vec::from(inp);
-    let target_vec = encrypt(target, &BASIC_KEY);
+    let target_vec = encrypt(target, enc_key);
     let mut inp_container =
         RIFFContainer::try_from(&inp_vec).map_err(|_| JoinError::InvalidWebpFile)?;
 
@@ -156,10 +156,10 @@ pub fn join_webp(inp: &[u8], target: &[u8]) -> Result<Vec<u8>, JoinError> {
     Ok(inp_container.to_bytes())
 }
 
-pub fn join_jpeg(inp: &[u8], target: &[u8]) -> Result<Vec<u8>, JoinError> {
+pub fn join_jpeg(inp: &[u8], target: &[u8], enc_key: &[u8; 32]) -> Result<Vec<u8>, JoinError> {
     let inp_vec = Vec::from(inp);
     let inp_container = JFIFContainer::try_from(&inp_vec);
-    let target_vec = encrypt(target, &BASIC_KEY);
+    let target_vec = encrypt(target, enc_key);
     let custom_segments: Vec<CustomSegment> = split_bytes(&target_vec);
 
     if let Err(_) = inp_container {

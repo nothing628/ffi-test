@@ -20,8 +20,17 @@ pub struct ReplacementImage {
 }
 
 #[wasm_bindgen]
-pub fn get_replacement_jpeg(inp_bytes: Vec<u8>) -> Result<JsValue, JsValue> {
-    let split_result = split_jpeg(&inp_bytes);
+pub fn get_replacement_jpeg(inp_bytes: Vec<u8>, enc_key: Vec<u8>) -> Result<JsValue, JsValue> {
+    let enc_key_slice = enc_key.get(0..32);
+
+    if let None = enc_key_slice {
+        let err_data = serde_wasm_bindgen::to_value("Enc key must 32 bytes")?;
+        return Err(err_data);
+    }
+
+    let enc_key_slice = enc_key_slice.unwrap();
+    let fixed_enc_key: &[u8;32] = enc_key_slice.try_into().unwrap();
+    let split_result = split_jpeg(&inp_bytes, fixed_enc_key);
 
     match split_result {
         Ok(split_data) => {
@@ -43,8 +52,17 @@ pub fn get_replacement_jpeg(inp_bytes: Vec<u8>) -> Result<JsValue, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn get_replacement_webp(inp_bytes: Vec<u8>) -> Result<JsValue, JsValue> {
-    let split_result = split_webp(&inp_bytes);
+pub fn get_replacement_webp(inp_bytes: Vec<u8>, enc_key: Vec<u8>) -> Result<JsValue, JsValue> {
+    let enc_key_slice = enc_key.get(0..32);
+
+    if let None = enc_key_slice {
+        let err_data = serde_wasm_bindgen::to_value("Enc key must 32 bytes")?;
+        return Err(err_data);
+    }
+
+    let enc_key_slice = enc_key_slice.unwrap();
+    let fixed_enc_key: &[u8;32] = enc_key_slice.try_into().unwrap();
+    let split_result = split_webp(&inp_bytes, fixed_enc_key);
 
     match split_result {
         Ok(split_data) => {

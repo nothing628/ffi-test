@@ -98,6 +98,18 @@ pub extern "C" fn set_watermark_jpeg(
 }
 
 #[no_mangle]
+pub extern "C" fn set_key(ptr: *mut WatermarkTask, byts_ptr: *const u8, byts_len: usize) -> u32 {
+    let byts = unsafe { std::slice::from_raw_parts(byts_ptr, byts_len) };
+    let watermark_task = unsafe { &mut *ptr };
+
+    if let Err(_) = watermark_task.set_key(byts) {
+        return 1;
+    }
+
+    0
+}
+
+#[no_mangle]
 pub extern "C" fn destroy_watermarktask(ptr: *mut WatermarkTask) {
     let _counter: Box<WatermarkTask> = unsafe { transmute(ptr) };
     // Drop
@@ -198,19 +210,27 @@ pub extern "C" fn get_output_jpeg(ptr: *mut WatermarkTask, target: *mut ArrResul
         return 1;
     }
 
-    let watermark_pos: [u8;8] = watermark_task.get_absolute_watermark_position().unwrap().into();
-    let watermark_dim: [u8;8] = watermark_task.get_watermark_dimension().unwrap().into();
+    if let None = watermark_task.get_key() {
+        return 4;
+    }
+
+    let watermark_pos: [u8; 8] = watermark_task
+        .get_absolute_watermark_position()
+        .unwrap()
+        .into();
+    let watermark_dim: [u8; 8] = watermark_task.get_watermark_dimension().unwrap().into();
     old_bytes.extend(watermark_pos);
     old_bytes.extend(watermark_dim);
 
-    let join_result = join_jpeg(&bytes, &old_bytes);
+    let enc_key = watermark_task.get_key().unwrap();
+    let join_result = join_jpeg(&bytes, &old_bytes, &enc_key);
     if let Ok(result) = join_result {
         target_arr.arr = result;
 
         return 0;
     }
 
-    4
+    5
 }
 
 fn get_output_webp_native(watermark_task: &mut WatermarkTask, target_arr: &mut ArrResult) -> u32 {
@@ -241,19 +261,27 @@ fn get_output_webp_native(watermark_task: &mut WatermarkTask, target_arr: &mut A
         return 1;
     }
 
-    let watermark_pos: [u8;8] = watermark_task.get_absolute_watermark_position().unwrap().into();
-    let watermark_dim: [u8;8] = watermark_task.get_watermark_dimension().unwrap().into();
+    if let None = watermark_task.get_key() {
+        return 4;
+    }
+
+    let watermark_pos: [u8; 8] = watermark_task
+        .get_absolute_watermark_position()
+        .unwrap()
+        .into();
+    let watermark_dim: [u8; 8] = watermark_task.get_watermark_dimension().unwrap().into();
     old_bytes.extend(watermark_pos);
     old_bytes.extend(watermark_dim);
 
-    let join_result = join_webp(&bytes, &old_bytes);
+    let enc_key = watermark_task.get_key().unwrap();
+    let join_result = join_webp(&bytes, &old_bytes, &enc_key);
     if let Ok(result) = join_result {
         target_arr.arr = result;
 
         return 0;
     }
 
-    4
+    5
 }
 
 #[cfg(test)]
@@ -263,9 +291,7 @@ mod tests {
     #[test]
     fn test_webp_watermark_task() {
         let mut watermark_task = WatermarkTask::new();
-        let mut arr_result = ArrResult {
-            arr: Vec::new(),
-        };
+        let mut arr_result = ArrResult { arr: Vec::new() };
         let watermark = image::open("../watermark.webp").unwrap();
         let img = image::open("../test.webp").unwrap();
 
