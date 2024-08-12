@@ -38,6 +38,8 @@ typedef struct CAPI_WatermarkTask CAPI_WatermarkTask;
 
  uint32_t *ret_arr(void) ;
 
+ uint32_t set_key(struct CAPI_WatermarkTask *Ptr, const uint8_t *BytsPtr, size_t BytsLen) ;
+
  void set_position_watermark(struct CAPI_WatermarkTask *Ptr, uint32_t X, uint32_t Y, uint8_t OriginX, uint8_t OriginY) ;
 
  uint32_t set_target_jpeg(struct CAPI_WatermarkTask *Ptr, const uint8_t *BytsPtr, size_t BytsLen) ;
