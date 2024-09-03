@@ -3,13 +3,20 @@ name = "drmlib"
 version = "0.1.0"
 edition = "2021"
 
-[build-dependencies]
-cbindgen = "0.24.0"
-
 [lib]
 path = "src/lib.rs"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 image = { version = "0.24.9", features = ["jpeg", "webp"] }
 drmcore = { version = "0.1.0", path = "../drmcore" }
+serde = { version = "1.0.203", features = ["serde_derive", "std"] }
+serde-wasm-bindgen = "0.6.5"
+wasm-bindgen = { version = "0.2.84", features = ["spans", "std", "serde-serialize", "serde", "serde_json"] }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.34"
+
+[profile.release]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"
