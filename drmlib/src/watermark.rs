@@ -7,6 +7,7 @@ use drmcore::watermark_task::{set_target, set_watermark, OriginX, OriginY, Water
 use wasm_bindgen::prelude::*;
 
 use crate::arr_result::ArrResult;
+use crate::create_get_old_section_func;
 
 #[wasm_bindgen]
 pub fn create_watermarktask() -> *mut WatermarkTask {
@@ -127,51 +128,8 @@ pub fn process_watermark(ptr: *mut WatermarkTask) -> u32 {
     0
 }
 
-#[wasm_bindgen]
-pub fn get_old_section_webp(ptr: *mut WatermarkTask, target: *mut ArrResult) -> u32 {
-    let watermark_task = unsafe { &mut *ptr };
-    let target_arr = unsafe { &mut *target };
-    let output = watermark_task.get_old_section();
-
-    if let Some(output_img) = output {
-        let mut bytes: Vec<u8> = Vec::new();
-        let mut cur = Cursor::new(&mut bytes);
-        let output_bin = output_img.write_to(&mut cur, ImageFormat::WebP);
-
-        if let Err(_) = output_bin {
-            return 2;
-        }
-
-        target_arr.arr = bytes;
-
-        return 0;
-    }
-
-    1
-}
-
-#[wasm_bindgen]
-pub fn get_old_section_jpeg(ptr: *mut WatermarkTask, target: *mut ArrResult) -> u32 {
-    let watermark_task = unsafe { &mut *ptr };
-    let target_arr = unsafe { &mut *target };
-    let output = watermark_task.get_old_section();
-
-    if let Some(output_img) = output {
-        let mut bytes: Vec<u8> = Vec::new();
-        let mut cur = Cursor::new(&mut bytes);
-        let output_bin = output_img.write_to(&mut cur, ImageFormat::Jpeg);
-
-        if let Err(_) = output_bin {
-            return 2;
-        }
-
-        target_arr.arr = bytes;
-
-        return 0;
-    }
-
-    1
-}
+create_get_old_section_func!{get_old_section_jpeg,ImageFormat::Jpeg}
+create_get_old_section_func!{get_old_section_webp,ImageFormat::WebP}
 
 #[wasm_bindgen]
 pub fn get_output_webp(ptr: *mut WatermarkTask, target: *mut ArrResult) -> u32 {
