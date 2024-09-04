@@ -3,4 +3,4 @@
 # Install wasmpack if not exists
 cargo install wasm-pack
 
-wasm-pack build
+wasm-pack build --target web --release

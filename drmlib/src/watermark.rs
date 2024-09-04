@@ -6,7 +6,6 @@ use drmcore::file_joiner::{join_jpeg, join_webp};
 use drmcore::watermark_task::{set_target, set_watermark, OriginX, OriginY, WatermarkTask};
 use wasm_bindgen::prelude::*;
 
-use crate::arr_result::ArrResult;
 use crate::{
     create_get_old_section_func, create_get_output_func, create_set_target_func,
     create_set_watermark_func,
@@ -37,15 +36,14 @@ pub fn set_position_watermark(ptr: *mut WatermarkTask, x: u32, y: u32, origin_x:
 }
 
 #[wasm_bindgen]
-pub fn set_key(ptr: *mut WatermarkTask, byts_ptr: *const u8, byts_len: usize) -> u32 {
-    let byts = unsafe { std::slice::from_raw_parts(byts_ptr, byts_len) };
+pub fn set_key(ptr: *mut WatermarkTask, key: Vec<u8>) -> Result<(),JsValue> {
     let watermark_task = unsafe { &mut *ptr };
 
-    if let Err(_) = watermark_task.set_key(byts) {
-        return 1;
+    if let Err(_) = watermark_task.set_key(&key) {
+        let err_msg = serde_wasm_bindgen::to_value("Cannot set encryption key")?;
+        return Err(err_msg);
     }
-
-    0
+    Ok(())
 }
 
 #[wasm_bindgen]
@@ -55,14 +53,15 @@ pub fn destroy_watermarktask(ptr: *mut WatermarkTask) {
 }
 
 #[wasm_bindgen]
-pub fn process_watermark(ptr: *mut WatermarkTask) -> u32 {
+pub fn process_watermark(ptr: *mut WatermarkTask) -> Result<(),JsValue> {
     let watermark_task = unsafe { &mut *ptr };
     let output = watermark_task.process();
 
     if let Err(_) = output {
-        return 1;
+        let err_msg = serde_wasm_bindgen::to_value("Cannot process")?;
+        return Err(err_msg);
     }
-    0
+    Ok(())
 }
 
 create_set_target_func! {set_target_webp,ImageFormat::WebP}
@@ -81,7 +80,6 @@ mod tests {
     #[test]
     fn test_webp_watermark_task() {
         let mut watermark_task = WatermarkTask::new();
-        let mut arr_result = ArrResult { arr: Vec::new() };
         let watermark = image::open("../watermark.webp").unwrap();
         let img = image::open("../test.webp").unwrap();
 
@@ -97,6 +95,6 @@ mod tests {
             }
         }
 
-        get_output_webp_native(&mut watermark_task, &mut arr_result);
+        let output = get_output_webp_native(&mut watermark_task);
     }
 }

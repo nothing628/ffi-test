@@ -1,11 +1,9 @@
 [package]
 name = "drmlib"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 [lib]
-path = "src/lib.rs"
-proc-macro = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]

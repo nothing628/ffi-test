@@ -2,9 +2,8 @@
 macro_rules! create_get_old_section_func {
     ($t:ident, $export:expr) => {
         #[wasm_bindgen]
-        pub fn $t(ptr: *mut WatermarkTask, target: *mut ArrResult) -> u32 {
+        pub fn $t(ptr: *mut WatermarkTask) -> Result<JsValue, JsValue> {
             let watermark_task = unsafe { &mut *ptr };
-            let target_arr = unsafe { &mut *target };
             let output = watermark_task.get_old_section();
 
             if let Some(output_img) = output {
@@ -13,15 +12,16 @@ macro_rules! create_get_old_section_func {
                 let output_bin = output_img.write_to(&mut cur, $export);
 
                 if let Err(_) = output_bin {
-                    return 2;
+                    let err_msg = serde_wasm_bindgen::to_value("Failed to write output")?;
+                    return Err(err_msg);
                 }
 
-                target_arr.arr = bytes;
-
-                return 0;
+                let output_bytes = serde_wasm_bindgen::to_value(&bytes)?;
+                return Ok(output_bytes);
             }
 
-            1
+            let err_msg = serde_wasm_bindgen::to_value("Task not yet processed")?;
+            return Err(err_msg);
         }
     };
 }
@@ -30,13 +30,12 @@ macro_rules! create_get_old_section_func {
 macro_rules! create_get_output_func {
     ($t:ident, $u:ident, $v:ident, $export:expr) => {
         #[wasm_bindgen]
-        pub fn $t(ptr: *mut WatermarkTask, target: *mut ArrResult) -> u32 {
+        pub fn $t(ptr: *mut WatermarkTask) -> Result<JsValue, JsValue> {
             let watermark_task = unsafe { &mut *ptr };
-            let target_arr = unsafe { &mut *target };
-            return $u(watermark_task, target_arr);
+            return $u(watermark_task);
         }
 
-        fn $u(watermark_task: &mut WatermarkTask, target_arr: &mut ArrResult) -> u32 {
+        fn $u(watermark_task: &mut WatermarkTask) -> Result<JsValue, JsValue> {
             let output = watermark_task.get_output();
             let old_section = watermark_task.get_old_section();
             let mut bytes: Vec<u8> = Vec::new();
@@ -47,10 +46,12 @@ macro_rules! create_get_output_func {
                 let output_bin = output_img.write_to(&mut cur, $export);
 
                 if let Err(_) = output_bin {
-                    return 2;
+                    let err_message = serde_wasm_bindgen::to_value("Cannot write output bytes")?;
+                    return Err(err_message);
                 }
             } else {
-                return 1;
+                let err_message = serde_wasm_bindgen::to_value("Task not yet processed")?;
+                return Err(err_message);
             }
 
             if let Some(old_img) = old_section {
@@ -58,14 +59,18 @@ macro_rules! create_get_output_func {
                 let output_old = old_img.write_to(&mut cur_old, $export);
 
                 if let Err(_) = output_old {
-                    return 3;
+                    let err_message =
+                        serde_wasm_bindgen::to_value("Cannot write old section bytes")?;
+                    return Err(err_message);
                 }
             } else {
-                return 1;
+                let err_message = serde_wasm_bindgen::to_value("Task not yet processed")?;
+                return Err(err_message);
             }
 
             if let None = watermark_task.get_key() {
-                return 4;
+                let err_message = serde_wasm_bindgen::to_value("Encryption key not set")?;
+                return Err(err_message);
             }
 
             let watermark_pos: [u8; 8] = watermark_task
@@ -79,12 +84,12 @@ macro_rules! create_get_output_func {
             let enc_key = watermark_task.get_key().unwrap();
             let join_result = $v(&bytes, &old_bytes, &enc_key);
             if let Ok(result) = join_result {
-                target_arr.arr = result;
-
-                return 0;
+                let result_values = serde_wasm_bindgen::to_value(&result)?;
+                return Ok(result_values);
             }
 
-            5
+            let err_message = serde_wasm_bindgen::to_value("Unknown error")?;
+            return Err(err_message);
         }
     };
 }
@@ -93,14 +98,14 @@ macro_rules! create_get_output_func {
 macro_rules! create_set_watermark_func {
     ($t:ident,$typ:expr) => {
         #[wasm_bindgen]
-        pub fn $t(ptr: *mut WatermarkTask, byts_ptr: *const u8, byts_len: usize) -> u32 {
-            let byts = unsafe { std::slice::from_raw_parts(byts_ptr, byts_len) };
+        pub fn $t(ptr: *mut WatermarkTask, inp_bytes: Vec<u8>) -> Result<(),JsValue> {
             let watermark_task = unsafe { &mut *ptr };
 
-            if let Err(_) = set_watermark(watermark_task, byts, $typ) {
-                return 1;
+            if let Err(_) = set_watermark(watermark_task, &inp_bytes, $typ) {
+                let err_message = serde_wasm_bindgen::to_value("Cannot set watermark")?;
+                return Err(err_message);
             }
-            0
+            Ok(())
         }
     };
 }
@@ -109,18 +114,14 @@ macro_rules! create_set_watermark_func {
 macro_rules! create_set_target_func {
     ($t:ident,$typ:expr) => {
         #[wasm_bindgen]
-        pub fn $t(
-            ptr: *mut WatermarkTask,
-            byts_ptr: *const u8,
-            byts_len: usize,
-        ) -> u32 {
-            let byts = unsafe { std::slice::from_raw_parts(byts_ptr, byts_len) };
+        pub fn $t(ptr: *mut WatermarkTask, inp_bytes: Vec<u8>) -> Result<(),JsValue> {
             let watermark_task = unsafe { &mut *ptr };
 
-            if let Err(_) = set_target(watermark_task, byts, $typ) {
-                return 1;
+            if let Err(_) = set_target(watermark_task, &inp_bytes, $typ) {
+                let err_message = serde_wasm_bindgen::to_value("Cannot set target")?;
+                return Err(err_message);
             }
-            0
+            Ok(())
         }
     };
 }
