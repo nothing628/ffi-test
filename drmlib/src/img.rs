@@ -2,9 +2,10 @@ use std::mem::transmute;
 use drmcore::img::get_section_jpeg as img_get_section_jpeg;
 use drmcore::img::get_section_webp as img_get_section_webp;
 use crate::arr_result::ArrResult;
+use wasm_bindgen::prelude::*;
 
-#[no_mangle]
-pub extern "C" fn get_section_webp(
+#[wasm_bindgen]
+pub fn get_section_webp(
     byts_ptr: *const u8,
     byts_len: usize,
     x: u32,
@@ -22,8 +23,8 @@ pub extern "C" fn get_section_webp(
     ptr
 }
 
-#[no_mangle]
-pub extern "C" fn get_section_jpeg(
+#[wasm_bindgen]
+pub fn get_section_jpeg(
     byts_ptr: *const u8,
     byts_len: usize,
     x: u32,
